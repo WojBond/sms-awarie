@@ -1,0 +1,17 @@
+# Dane i sekrety - nigdy w repozytorium
+data/
+logs/
+*.sqlite
+*.sqlite-*
+*.db
+config.json
+config.local.php
+.env
+# Build / zaleznosci
+node_modules/
+.next/
+next-env.d.ts
+# Paczki i dokumenty generowane
+dist/
+*.zip
+*.pdf
