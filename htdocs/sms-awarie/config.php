@@ -1,7 +1,14 @@
 <?php
 // SMS-Awarie - wersja, changelog, strefa czasowa i sciezki. Jedno zrodlo prawdy dla numeru wersji.
-define('APP_VERSION', '4.1.1');
+define('APP_VERSION', '4.2.0');
 const APP_CHANGELOG = [
+    '4.2.0' => [
+        'Baza MS SQL Server jako alternatywa dla SQLite: Ustawienia > Baza danych - test polaczenia, przelaczenie z przeniesieniem obecnych danych albo od pustej bazy, powrot do SQLite.',
+        'Odbiornik laczy sie z nowa baza bez restartu i wstrzymuje sie na czas przelaczania; kopie MS SQL przez BACKUP DATABASE (COPY_ONLY) z weryfikacja.',
+        'Menu boczne zamiast gornego; na telefonie wysuwane przyciskiem Menu.',
+        'Grupy zgloszen w podmenu (np. Pojazdy) - strona grupy ze statystykami, ostatnimi zgloszeniami, lista pojazdow i ustawieniami.',
+        'Ustawienia z podmenu Autoodpowiedzi, Modem, Baza danych; testowy SMS na podany numer w Autoodpowiedziach.',
+    ],
     '4.1.1' => [
         'Instalator i zadania same znajduja XAMPP na dowolnym dysku (rejestr, usluga Apache, X:\\xampp) albo przyjmuja parametr -Xampp D:\\xampp.',
         'Instalator tylko dla swiezej instalacji i aktualizacji w htdocs - bez przenoszenia danych z C:\\SMS-Awarie i bez zmian w httpd.conf.',

@@ -34,7 +34,7 @@ if (($_GET['export'] ?? '') === 'csv') {
 }
 
 $total = (int)one($p, "SELECT COUNT(*) $from", $args);
-$list = rows($p, $select.' LIMIT '.PER_PAGE.' OFFSET '.((page_no() - 1) * PER_PAGE), $args);
+$list = rows($p, $select.sql_page($p, PER_PAGE, (page_no() - 1) * PER_PAGE), $args);
 $groups = rows($p, 'SELECT id,name FROM incident_groups ORDER BY name');
 
 layout_start($title, $u, $page);

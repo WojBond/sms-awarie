@@ -32,7 +32,7 @@ if ($f['status'] !== '') { $where[] = 'status=?'; $args[] = $f['status']; }
 if ($f['q'] !== '') { $where[] = '(phone LIKE ? OR content LIKE ?)'; array_push($args, "%{$f['q']}%", "%{$f['q']}%"); }
 $w = $where ? ' WHERE '.implode(' AND ', $where) : '';
 $total = (int)one($p, "SELECT COUNT(*) FROM outbox$w", $args);
-$list = rows($p, "SELECT id,phone,content,status,created,detail FROM outbox$w ORDER BY created DESC LIMIT ".PER_PAGE.' OFFSET '.((page_no() - 1) * PER_PAGE), $args);
+$list = rows($p, "SELECT id,phone,content,status,created,detail FROM outbox$w ORDER BY created DESC".sql_page($p, PER_PAGE, (page_no() - 1) * PER_PAGE), $args);
 
 layout_start($title, $u, $page);
 ?>

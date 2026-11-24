@@ -1,21 +1,17 @@
 <?php
 // SMS-Awarie - wspolne funkcje odbiornika i panelu.
 require_once __DIR__.'/config.php';
+require_once __DIR__.'/db.php';
 
 function config(){
     $defaults=['modem'=>'http://192.168.8.1','modempass'=>'','ack'=>false,'own_phone'=>'','ack_template'=>'','delete_after_import'=>true,'send_per_cycle'=>5];
     $file=DATA_DIR.'/config.json';
     return array_merge($defaults,is_file($file)?json_decode(file_get_contents($file),true,512,JSON_THROW_ON_ERROR):[]);
 }
-function saveconfig($c){file_put_contents(DATA_DIR.'/config.json',json_encode($c,JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR),LOCK_EX);}
-// 4.0.0: tylko SQLite (migracja do MS SQL z wersji 3.x usunieta - nie obejmowala grup i nie byla uzywana przez odbiornik).
-function db($type='sqlite',$c=null){
-    $p=new PDO('sqlite:'.DATA_DIR.'/awarie.sqlite');
-    $p->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
-    $p->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE,PDO::FETCH_ASSOC);
-    $p->exec('PRAGMA busy_timeout=10000');
-    $p->exec('PRAGMA journal_mode=WAL');
-    return $p;
+// Zapis atomowy (plik tymczasowy + rename), bo odbiornik czyta config.json w kazdym cyklu.
+function saveconfig($c){
+    $file=DATA_DIR.'/config.json';$tmp=$file.'.'.getmypid().'.tmp';
+    if(file_put_contents($tmp,json_encode($c,JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR),LOCK_EX)===false||!rename($tmp,$file)){@unlink($tmp);throw new RuntimeException('Nie mozna zapisac data/config.json');}
 }
 function uid(){return bin2hex(random_bytes(16));}
 function plate($s){return strtoupper(preg_replace('/[^A-Za-z0-9]/','',$s));}
@@ -25,14 +21,9 @@ function schema($p,$type='sqlite'){
     $p->exec('CREATE TABLE IF NOT EXISTS sms (id varchar(64) NOT NULL PRIMARY KEY, modem_index varchar(32) NOT NULL, sender varchar(100) NOT NULL, content TEXT NOT NULL, received varchar(32) NOT NULL, status varchar(32) NOT NULL)');
     $p->exec('CREATE TABLE IF NOT EXISTS tickets (id varchar(64) NOT NULL PRIMARY KEY, sms_id varchar(64) NOT NULL UNIQUE, plate varchar(20) NOT NULL, description TEXT NOT NULL, status varchar(32) NOT NULL, created varchar(32) NOT NULL)');
 }
-function hasColumn(PDO $p,string $table,string $col): bool {
-    foreach($p->query("PRAGMA table_info($table)")->fetchAll() as $c)if($c['name']===$col)return true;
-    return false;
-}
+function queueSms($p,$id,$phone,$message){$message=smsAscii($message);if(!preg_match('/^\+?[0-9]{9,15}$/D',$phone))throw new Exception('Niepoprawny numer telefonu');if(!preg_match('/^[A-Za-z0-9 .,!:?+\/-]{1,150}$/D',$message))throw new Exception('SMS: maks. 150 prostych znakow ASCII');$p->prepare('INSERT INTO outbox(id,phone,content,status,created,detail) VALUES(?,?,?,?,?,?)')->execute([$id,$phone,$message,'OCZEKUJE',date('Y-m-d H:i:s'),'']);}
 
-function queueSms($p,$id,$phone,$message){$message=smsAscii($message);if(!preg_match('/^\+?[0-9]{9,15}$/D',$phone))throw new Exception('Niepoprawny numer telefonu');if(!preg_match('/^[A-Za-z0-9 .,!:?+\/-]{1,150}$/D',$message))throw new Exception('SMS: maks. 150 prostych znakow ASCII');$p->prepare('INSERT INTO outbox VALUES(?,?,?,?,?,?)')->execute([$id,$phone,$message,'OCZEKUJE',date('Y-m-d H:i:s'),'']);}
-
-// Stable human-readable reference. Does not change the SQLite schema.
+// Czytelny numer zgloszenia (AW/RRRR/NNNNN).
 function ticketNumber($p, $id) {
     $q = $p->prepare('SELECT created,seq FROM tickets WHERE id=?');
     $q->execute([$id]);
@@ -49,8 +40,8 @@ function ticketNumberFrom(string $id, string $created, ?int $seq = null): string
     return 'AW/'.$year.'/'.strtoupper(substr($id, 0, 8));
 }
 function nextTicketSeq(PDO $p, string $created): int {
-    $q = $p->prepare('SELECT COALESCE(MAX(seq),0)+1 FROM tickets WHERE substr(created,1,4)=?');
-    $q->execute([substr($created, 0, 4)]);
+    $q = $p->prepare('SELECT COALESCE(MAX(seq),0)+1 FROM tickets WHERE created LIKE ?');
+    $q->execute([substr($created, 0, 4).'%']);
     $n = (int)$q->fetchColumn();
     $q->closeCursor();
     return $n;

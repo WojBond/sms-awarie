@@ -1,4 +1,4 @@
-# Instalacja SMS-Awarie 4.1
+# Instalacja SMS-Awarie 4.2
 
 Aplikacja działa w standardowym folderze stron XAMPP: **`<XAMPP>\htdocs\sms-awarie`**, a panel jest pod adresem **`http://serwer/sms-awarie/`**. `<XAMPP>` to folder, w którym zainstalowano XAMPP, na dowolnym dysku (np. `C:\xampp`, `D:\xampp`, `E:\Serwer\xampp`). Nie trzeba zmieniać `httpd.conf`.
 
@@ -8,6 +8,7 @@ Aplikacja działa w standardowym folderze stron XAMPP: **`<XAMPP>\htdocs\sms-awa
 - XAMPP z PHP 8.2+. Rozszerzenia `pdo_sqlite`, `curl` i `SimpleXML` są w XAMPP włączone domyślnie, a instalator to sprawdza.
 - **`AllowOverride All` dla htdocs**, czyli ustawienie domyślne XAMPP. Pliki `.htaccess` blokują wtedy dostęp z przeglądarki do bazy, `config.json` (hasło modemu) i logów. Instalator, `verify.ps1` i Dashboard ostrzegają, gdy ochrona nie działa.
 - Apache najlepiej uruchomić jako **usługę Windows** (XAMPP Control Panel → przycisk *Svc* przy Apache), żeby panel działał po wylogowaniu i restarcie.
+- Opcjonalnie Microsoft SQL Server zamiast pliku SQLite – zobacz `docs/MSSQL.md` (można przełączyć w dowolnym momencie po instalacji).
 - Modem Huawei E5373 osiągalny z serwera (domyślnie `http://192.168.8.1`) oraz hasło administratora modemu.
 
 ## Gdzie jest XAMPP
@@ -28,7 +29,7 @@ Skrypty (`install.ps1`, `install-watchdog-task.ps1`, `install-backup-task.ps1`, 
 
    **Instalacja ręczna:** zamiast instalatora możesz skopiować katalog `htdocs\sms-awarie` z paczki do `<XAMPP>\htdocs\` i uruchomić `<XAMPP>\php\php.exe <XAMPP>\htdocs\sms-awarie\cli\init.php`.
 3. Otwórz `http://localhost/sms-awarie/` i utwórz pierwszego administratora.
-4. W zakładce **Ustawienia i modem** wpisz hasło modemu. Dopóki go nie ustawisz, odbiornik nie wystartuje.
+4. W menu **Ustawienia › Modem** wpisz hasło modemu. Dopóki go nie ustawisz, odbiornik nie wystartuje.
 5. Zarejestruj zadania Harmonogramu. Każde z nich pyta o konto serwisowe (dodaj `-Xampp <ścieżka>`, jeśli podawałeś ją instalatorowi):
    ```powershell
    .\scripts\install-watchdog-task.ps1                                       # odbiornik + Watchdog (co minutę)
@@ -36,7 +37,8 @@ Skrypty (`install.ps1`, `install-watchdog-task.ps1`, `install-backup-task.ps1`, 
    ```
    Kopie najlepiej trzymać na innym dysku niż XAMPP albo na udziale sieciowym.
 6. Sprawdź instalację: `.\scripts\verify.ps1`. Skrypt sprawdza też, czy `data\config.json` jest zablokowany z sieci. Na Dashboardzie stan odbiornika powinien zmienić się na RUNNING w ciągu 1–2 minut.
-7. Dostęp z sieci: `http://<adres-serwera>/sms-awarie/`. Port 80 jest zwykle już otwarty dla innych aplikacji XAMPP. Jeśli nie jest, uruchom `.\scripts\firewall-lan.ps1 -RemoteSubnet 192.168.10.0/24`.
+7. Testowy SMS: **Ustawienia › Autoodpowiedzi › Testowy SMS** – wpisz swój numer i sprawdź, czy wiadomość dochodzi.
+8. Dostęp z sieci: `http://<adres-serwera>/sms-awarie/`. Port 80 jest zwykle już otwarty dla innych aplikacji XAMPP. Jeśli nie jest, uruchom `.\scripts\firewall-lan.ps1 -RemoteSubnet 192.168.10.0/24`.
 
 ## 2. Aktualizacja (4.1 → kolejne wersje)
 
@@ -55,7 +57,7 @@ Jeśli XAMPP przeniesiesz na inny dysk, zarejestruj zadania ponownie z `-Replace
 
 ## 3. Ustawienia w `data\config.json`
 
-Ustawienia zmieniasz w panelu (Ustawienia i modem):
+Ustawienia zmieniasz w panelu (Ustawienia › Modem):
 - `delete_after_import` (domyślnie `true`) usuwa odebrane SMS z modemu po zapisie w bazie;
 - `send_per_cycle` (domyślnie 5) określa, ile SMS odbiornik wysyła w jednym cyklu.
 
