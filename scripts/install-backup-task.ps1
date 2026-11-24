@@ -1,16 +1,19 @@
 ﻿# SMS-Awarie - rejestruje codzienna kopie SQLite (domyslnie 02:30, retencja 30 dni). Uruchom jako administrator.
-# Kopie trafiaja do <Root>\data\backups lub do -Target (zalecany inny dysk / udzial sieciowy).
-# -Replace usuwa istniejace zadanie o tej nazwie (np. po przeniesieniu z C:\SMS-Awarie do htdocs).
-param([string]$Root='C:\xampp\htdocs\sms-awarie',[string]$Php='C:\xampp\php\php.exe',[string]$Time='02:30',[int]$KeepDays=30,[string]$Target='',[switch]$Replace,[switch]$Apply)
+# Kopie trafiaja do <aplikacja>\data\backups lub do -Target (zalecany inny dysk / udzial sieciowy).
+# XAMPP jest wykrywany automatycznie; inny katalog: -Xampp D:\xampp. -Replace odtwarza istniejace zadanie.
+param([string]$Xampp='',[string]$Root='',[string]$Time='02:30',[int]$KeepDays=30,[string]$Target='',[switch]$Replace,[switch]$Apply)
 $ErrorActionPreference='Stop'
+. (Join-Path $PSScriptRoot '_xampp.ps1')
+$Xampp=Find-Xampp $Xampp
+if(-not $Root){$Root=Join-Path $Xampp 'htdocs\sms-awarie'}
+$Php=Join-Path $Xampp 'php\php.exe'
 $name='SMS-Awarie-v3-Backup'
 $script=Join-Path $Root 'backup.php'
-if(!(Test-Path $Php)){throw "Missing $Php"}
 if(!(Test-Path $script)){throw "Missing $script - run install.ps1 -Apply first"}
 $old=Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue
-if($old -and -not $Replace){throw "Task already exists: $name. Use -Replace to recreate it for $Root."}
+if($old -and -not $Replace){throw "Task already exists: $name. Use -Replace to recreate it."}
 $taskArgs='"'+$script+'" '+$KeepDays; if($Target){$taskArgs+=' "'+$Target+'"'}
-Write-Host "Task: $name, daily at $Time, keep $KeepDays days, target: $(if($Target){$Target}else{Join-Path $Root 'data\backups'})"
+Write-Host "XAMPP: $Xampp; task: $name, daily at $Time, keep $KeepDays days, target: $(if($Target){$Target}else{Join-Path $Root 'data\backups'})"
 if(-not $Apply){Write-Host 'DRY RUN. Use -Apply to register.';exit}
 if($old){Unregister-ScheduledTask -TaskName $name -Confirm:$false; Write-Host "Removed old task $name."}
 $action=New-ScheduledTaskAction -Execute $Php -Argument $taskArgs -WorkingDirectory $Root

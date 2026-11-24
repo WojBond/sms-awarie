@@ -1,6 +1,6 @@
 <?php
 // SMS-Awarie - codzienna kopia SQLite (VACUUM INTO) z retencja.
-// Uzycie: php.exe C:\xampp\htdocs\sms-awarie\backup.php [dni_retencji=30] [katalog_docelowy]
+// Uzycie: <XAMPP>\php\php.exe <XAMPP>\htdocs\sms-awarie\backup.php [dni_retencji=30] [katalog_docelowy]
 // Uruchamiane z Harmonogramu zadan (scripts\install-backup-task.ps1).
 require __DIR__.'/common.php';
 if(PHP_SAPI!=='cli')exit(1);

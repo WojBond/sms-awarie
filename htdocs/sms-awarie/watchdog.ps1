@@ -1,6 +1,8 @@
 ﻿# SMS-Awarie - Watchdog v3; Windows PowerShell 5.1
-param([string]$Root='C:\xampp\htdocs\sms-awarie',[string]$Php='C:\xampp\php\php.exe',[int]$StaleSeconds=180,[int]$CooldownSeconds=300,[int]$MaxRestartsPerHour=3,[int]$GraceSeconds=90,[int]$StopWaitSeconds=20)
+param([string]$Root=$PSScriptRoot,[string]$Php='',[int]$StaleSeconds=180,[int]$CooldownSeconds=300,[int]$MaxRestartsPerHour=3,[int]$GraceSeconds=90,[int]$StopWaitSeconds=20)
 $ErrorActionPreference='Stop'
+# <XAMPP>\htdocs\sms-awarie -> <XAMPP>\php\php.exe (XAMPP na dowolnym dysku)
+if(-not $Php){$Php=Join-Path (Split-Path (Split-Path $Root -Parent) -Parent) 'php\php.exe'}
 $data=Join-Path $Root 'data'; $logs=Join-Path $Root 'logs'; $receiver=Join-Path $Root 'receiver.php'
 New-Item -ItemType Directory -Force -Path $data,$logs | Out-Null
 $statePath=Join-Path $data 'watchdog-state.json'; $events=Join-Path $logs 'watchdog-events.jsonl'; $log=Join-Path $logs 'watchdog.log'; $hbPath=Join-Path $data 'heartbeat.json'; $pausePath=Join-Path $data 'watchdog.pause'

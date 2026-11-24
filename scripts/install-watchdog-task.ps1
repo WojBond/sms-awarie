@@ -1,14 +1,19 @@
 ﻿# SMS-Awarie - rejestruje zadanie Watchdoga (co minute pilnuje odbiornika receiver.php).
-# Uruchom jako administrator w oknie serwisowym. Nie uruchamia ani nie zatrzymuje odbiornika.
-# -Replace usuwa istniejace zadanie o tej nazwie (np. po przeniesieniu z C:\SMS-Awarie do htdocs).
-param([string]$Root='C:\xampp\htdocs\sms-awarie',[string]$Php='C:\xampp\php\php.exe',[switch]$Replace)
+# Uruchom jako administrator. Nie uruchamia ani nie zatrzymuje odbiornika.
+# XAMPP jest wykrywany automatycznie; inny katalog: -Xampp D:\xampp. -Replace odtwarza istniejace zadanie.
+param([string]$Xampp='',[string]$Root='',[switch]$Replace)
 $ErrorActionPreference='Stop'
+. (Join-Path $PSScriptRoot '_xampp.ps1')
+$Xampp=Find-Xampp $Xampp
+if(-not $Root){$Root=Join-Path $Xampp 'htdocs\sms-awarie'}
+$Php=Join-Path $Xampp 'php\php.exe'
 $name='SMS-Awarie-v3-Watchdog'
 $script=Join-Path $Root 'watchdog.ps1'
 if(!(Test-Path $script)){throw "Missing $script - run install.ps1 -Apply first"}
+Write-Host "XAMPP: $Xampp; aplikacja: $Root"
 $old=Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue
 if($old){
-  if(-not $Replace){throw "Task already exists: $name ($($old.Actions[0].Arguments)). Use -Replace to recreate it for $Root."}
+  if(-not $Replace){throw "Task already exists: $name ($($old.Actions[0].Arguments)). Use -Replace to recreate it."}
   Unregister-ScheduledTask -TaskName $name -Confirm:$false
   Write-Host "Removed old task $name."
 }
@@ -21,4 +26,4 @@ $user=Read-Host 'Service account (DOMAIN\user or COMPUTER\user)'
 if([string]::IsNullOrWhiteSpace($user)){throw 'Service account required'}
 $cred=Get-Credential -UserName $user -Message 'Credentials for scheduled task'
 Register-ScheduledTask -TaskName $name -Action $action -Trigger $trigger -Settings $settings -User $cred.UserName -Password $cred.GetNetworkCredential().Password -Description "SMS-Awarie Watchdog ($Root)" | Out-Null
-Write-Host "Created $name for $Root. It starts within 2 minutes unless data\watchdog.pause exists."
+Write-Host "Created $name. It starts within 2 minutes unless data\watchdog.pause exists."

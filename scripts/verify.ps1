@@ -1,6 +1,10 @@
 ﻿# SMS-Awarie 4.x - kontrola instalacji (tylko odczyt).
-param([string]$Root='C:\xampp\htdocs\sms-awarie',[string]$Xampp='C:\xampp')
+param([string]$Xampp='',[string]$Root='')
 $ErrorActionPreference='Continue'
+. (Join-Path $PSScriptRoot '_xampp.ps1')
+$Xampp=Find-Xampp $Xampp
+if(-not $Root){$Root=Join-Path $Xampp 'htdocs\sms-awarie'}
+Write-Host "XAMPP: $Xampp; aplikacja: $Root"
 $php=Join-Path $Xampp 'php\php.exe'
 Write-Host '== PHP lint'
 Get-ChildItem $Root -Recurse -Filter *.php | Where-Object {$_.FullName -notmatch '\\data\\'} | ForEach-Object {$r=& $php -l $_.FullName 2>&1; if($LASTEXITCODE -ne 0){Write-Host $r -ForegroundColor Red}}
