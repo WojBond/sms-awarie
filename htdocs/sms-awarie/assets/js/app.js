@@ -1,5 +1,22 @@
 // SMS-Awarie - drobne zachowania panelu (bez bibliotek).
+// Tabele list na telefonie wyswietlane jako karty: etykieta kolumny w data-label kazdej komorki.
+function stackTables(root) {
+  root.querySelectorAll('table').forEach(function (t) {
+    var th = t.querySelectorAll('thead th');
+    if (!th.length) return;
+    t.classList.add('stack');
+    t.querySelectorAll('tbody tr').forEach(function (tr) {
+      Array.prototype.forEach.call(tr.children, function (td, i) {
+        if (th[i] && !td.hasAttribute('colspan')) td.setAttribute('data-label', th[i].textContent.trim());
+        if (!td.textContent.trim() && !td.querySelector('input, button, select, a')) td.classList.add('empty');
+      });
+    });
+  });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
+  stackTables(document);
+
   // Potwierdzenie dla formularzy z atrybutem data-confirm.
   document.querySelectorAll('form[data-confirm]').forEach(function (f) {
     f.addEventListener('submit', function (e) {
@@ -14,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (document.hidden) return;
       fetch(live.dataset.refresh, { cache: 'no-store', credentials: 'same-origin' })
         .then(function (r) { if (!r.ok || r.redirected) throw new Error(r.status); return r.text(); })
-        .then(function (html) { live.innerHTML = html; })
+        .then(function (html) { live.innerHTML = html; stackTables(live); })
         .catch(function () { /* brak sieci - sprobuj w kolejnym cyklu */ });
     }, 10000);
   }

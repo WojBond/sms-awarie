@@ -16,10 +16,10 @@ layout_start($title, $u, $page);
 <form method="get" class="filters card">
   <input type="hidden" name="p" value="messages">
   <label>Szukaj<input name="q" value="<?= h($f['q']) ?>" placeholder="telefon, treść"></label>
-  <label>Status<select name="status"><option value="">Wszystkie</option><?php foreach ($statuses as $s): ?><option<?= $f['status'] === $s ? ' selected' : '' ?>><?= h($s) ?></option><?php endforeach; ?></select></label>
+  <label>Status<select name="status"><option value="">Wszystkie</option><?php foreach ($statuses as $s): ?><option value="<?= h($s) ?>"<?= $f['status'] === $s ? ' selected' : '' ?>><?= h(STATUS_LABELS[$s] ?? $s) ?></option><?php endforeach; ?></select></label>
   <button class="btn">Filtruj</button>
 </form>
-<p class="muted">NIEPOPRAWNY – nie rozpoznano grupy lub obiektu. BLAD – wiadomość nie dała się przetworzyć (szczegóły w dzienniku odbiornika).</p>
+<p class="muted">Niepoprawny – nie rozpoznano grupy lub obiektu. Błąd – wiadomość nie dała się przetworzyć (szczegóły w dzienniku odbiornika).</p>
 <div class="table-wrap"><table>
 <thead><tr><th>Odebrano</th><th>Nadawca</th><th>Treść</th><th>Status</th></tr></thead>
 <tbody>

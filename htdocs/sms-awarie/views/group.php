@@ -50,22 +50,21 @@ layout_start($g['name'], $u, $page);
   <small class="muted">odbiorców powiadomień: <?= count($phones) ?></small></p>
 <div class="kpis">
 <?php foreach (TICKET_STATUSES as $k => $label): ?>
-  <a class="card kpi" href="<?= h(url('tickets', ['group' => $gid, 'status' => $k])) ?>"><span><?= h($label) ?></span><strong><?= $stats[$k] ?></strong></a>
+  <a class="card kpi <?= ['NOWE' => 'k-blue', 'WERYFIKACJA' => 'k-amber', 'W_REALIZACJI' => 'k-violet', 'ZAMKNIETE' => 'k-green'][$k] ?? '' ?>" href="<?= h(url('tickets', ['group' => $gid, 'status' => $k])) ?>"><span><?= h($label) ?></span><strong><?= $stats[$k] ?></strong></a>
 <?php endforeach; ?>
 </div>
 <section class="card">
-  <h2>Ostatnie zgłoszenia</h2>
+  <div class="card-head"><h2>Ostatnie zgłoszenia</h2><a class="btn btn-o" href="<?= h(url('tickets', ['group' => $gid])) ?>">Wszystkie zgłoszenia grupy</a></div>
   <?php if (!$recent): ?><p class="muted">Brak zgłoszeń w tej grupie.</p><?php else: ?>
   <div class="table-wrap"><table><thead><tr><th>Numer</th><th>Obiekt</th><th>Opis</th><th>Status</th><th>Utworzono</th></tr></thead><tbody>
-  <?php foreach ($recent as $r): ?><tr><td><?= h(ticketNumberFrom($r['id'], $r['created'], $r['seq'] !== null ? (int)$r['seq'] : null)) ?></td><td><?= h($r['plate']) ?></td><td><?= h(mb_strimwidth($r['description'], 0, 90, '…')) ?></td><td><?= badge($r['status']) ?></td><td><?= h(fmt_dt($r['created'])) ?></td></tr><?php endforeach; ?>
+  <?php foreach ($recent as $r): ?><tr><td><a href="<?= h(url('tickets', ['group' => $gid, 'q' => $r['plate']])) ?>"><?= h(ticketNumberFrom($r['id'], $r['created'], $r['seq'] !== null ? (int)$r['seq'] : null)) ?></a></td><td><?= h($r['plate']) ?></td><td><?= h(mb_strimwidth($r['description'], 0, 90, '…')) ?></td><td><?= badge($r['status']) ?></td><td><?= h(fmt_dt($r['created'])) ?></td></tr><?php endforeach; ?>
   </tbody></table></div>
   <?php endif; ?>
-  <p><a href="<?= h(url('tickets', ['group' => $gid])) ?>">Wszystkie zgłoszenia grupy ›</a></p>
 </section>
 
 <?php if ($isVehicles): ?>
 <section class="card">
-  <h2>Pojazdy</h2>
+  <div class="card-head"><h2>Pojazdy</h2><a class="btn btn-o" href="<?= h(url('group', $all ? ['id' => $gid] : ['id' => $gid, 'all' => 1])) ?>"><?= $all ? 'Pokaż tylko aktywne' : 'Pokaż także wyłączone' ?></a></div>
   <?php if (can_write($u)): ?>
   <form method="post" action="<?= h(url('group', ['id' => $gid])) ?>" class="filters">
     <?= csrf_field() ?><input type="hidden" name="action" value="add">
@@ -73,7 +72,6 @@ layout_start($g['name'], $u, $page);
     <button class="btn">Dodaj pojazd</button>
   </form>
   <?php endif; ?>
-  <p><a href="<?= h(url('group', $all ? ['id' => $gid] : ['id' => $gid, 'all' => 1])) ?>"><?= $all ? 'Pokaż tylko aktywne' : 'Pokaż także wyłączone' ?></a></p>
   <div class="table-wrap"><table>
   <thead><tr><th>Rejestracja</th><th>Zgłoszenia</th><th>Stan</th><th></th></tr></thead>
   <tbody>

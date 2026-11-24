@@ -1,5 +1,14 @@
 # Changelog SMS-Awarie
 
+## 4.3.0 – 2026-11-24 (minor)
+- **Odświeżony wygląd panelu** w tym samym jasnym, niebieskim stylu: ikony liniowe w menu bocznym (inline SVG, bez bibliotek i CDN), znak aplikacji, wyróżnienie aktywnej pozycji paskiem, karty z delikatnym cieniem, nagłówki tabel i podświetlanie wierszy, plakietki statusów z kropką.
+- **Telefon i Zebra:** tabele list wyświetlane jako karty z etykietami kolumn (`app.js` dodaje `data-label`, bez JavaScriptu zostaje przewijana tabela). Naprawione przesuwanie całej strony w poziomie na Dashboardzie i w Bazie danych (długie ścieżki).
+- Liczniki na Dashboardzie prowadzą do przefiltrowanych list (zgłoszenia według statusu, oczekujące SMS-y), grupy w „Zgłoszenia według grup” do strony grupy; na stronie grupy numery zgłoszeń są linkami, a „Wszystkie zgłoszenia grupy” i „Pokaż także wyłączone” to przyciski w nagłówku karty.
+- Czytelne nazwy statusów SMS i wysyłek (Oczekuje, Przyjęty przez modem, Niepoprawny, Błąd, Anulowany…) w plakietkach i filtrach; w bazie bez zmian.
+- Plakietka wersji z changelogiem w stopce menu bocznego (na telefonie nie zasłania treści); w stopce login, rola i Wyloguj.
+- Nowy ekran logowania i pierwszego uruchomienia (wyśrodkowana karta ze znakiem aplikacji, komunikaty w karcie).
+- Dostępność: pola dotyku min. 44 px (menu, rozwijane karty, grupy), widoczny fokus klawiatury na linkach i nagłówkach `<details>`, strzałka przy rozwijanych kartach.
+
 ## 4.2.0 – 2026-11-24 (minor)
 - **MS SQL Server** jako alternatywa dla SQLite (`db.php`, `docs/MSSQL.md`). W Ustawienia › Baza danych: test połączenia, opcjonalne utworzenie bazy, przełączenie z przeniesieniem obecnych danych (z porównaniem liczby wierszy) albo od pustej bazy (tylko konta), użycie istniejącej bazy i powrót do SQLite. Domyślnie nadal SQLite.
 - Odbiornik czyta ustawienia bazy w każdym cyklu: wstrzymuje się na czas przełączania (`data\maintenance.flag`), łączy się z nową bazą bez restartu i ponawia połączenie po awarii serwera SQL.

@@ -16,10 +16,15 @@ if ($post) {
 }
 layout_start('Logowanie', null, 'login');
 ?>
-<form method="post" action="<?= h(url('login')) ?>" class="card narrow">
+<div class="auth">
+<form method="post" action="<?= h(url('login')) ?>" class="card">
+  <?= brand() ?>
+  <h1>Zaloguj się do panelu</h1>
+  <?php flash_html(); ?>
   <?= csrf_field() ?>
   <label>Login<input name="login" required autofocus autocomplete="username"></label>
   <label>Hasło<input name="password" type="password" required autocomplete="current-password"></label>
   <button class="btn">Zaloguj</button>
 </form>
+</div>
 <?php layout_end();
