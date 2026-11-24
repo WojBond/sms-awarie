@@ -1,6 +1,10 @@
 # Dane i sekrety - nigdy w repozytorium
-data/
-logs/
+app/data/*
+!app/data/.htaccess
+!app/data/.gitkeep
+app/logs/*
+!app/logs/.htaccess
+!app/logs/.gitkeep
 *.sqlite
 *.sqlite-*
 *.db

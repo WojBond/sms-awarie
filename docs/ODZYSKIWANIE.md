@@ -1,7 +1,7 @@
 # Procedura odzyskiwania SMS-Awarie po awarii
 
 ## 1. Klasyfikacja problemu
-- **Frontend/API nie działa, dane są poprawne:** przywróć tylko pliki aplikacji i poprzedni build; zachowaj aktualną SQLite.
+- **Panel nie działa, dane są poprawne:** sprawdź `C:\xampp\apache\logs\error.log`; w razie potrzeby przywróć pliki programu z `C:\SMS-Awarie-Backups\pre-...\app`; zachowaj aktualną SQLite.
 - **Receiver zawieszony:** sprawdź `watchdog-state.json`, `heartbeat.json`, proces PID, `watchdog-events.jsonl`, limity restartów i `watchdog.pause`. Nie uruchamiaj drugiego odbiornika ręcznie, jeśli pierwszy działa.
 - **Niepewna wysyłka SMS:** nie zmieniaj automatycznie statusów `W_TRAKCIE` / `NIEPEWNY`; porównaj z historią modemu i dokumentacją operacyjną. `PRZYJETY` nie oznacza doręczenia.
 - **Uszkodzona baza:** najpierw zabezpiecz oryginał wraz z WAL/SHM, następnie wykonaj diagnostykę i odzyskuj na kopii.
@@ -10,12 +10,12 @@
 1. Utwórz `C:\SMS-Awarie\data\watchdog.pause`, wyłącz nowe zadanie Harmonogramu i inne autostarty.
 2. Zweryfikuj pełną ścieżkę i PID `receiver.php`. Poczekaj na koniec przetwarzania; zatrzymaj proces dopiero w oknie serwisowym.
 3. Zabezpiecz aktualną bazę, konfigurację, heartbeat, logi i kopię obecnego kodu (materiał do analizy).
-4. Przywróć poprzednie `common.php`, `receiver.php`, `watchdog.ps1`, `api.php`, pliki frontendowe i poprzedni build z backupu wdrożeniowego. Nie podmieniaj `awarie.sqlite`.
-5. Uruchom poprzedni frontend, przywróć jedno poprzednie zadanie startowe; usuń `watchdog.pause` dopiero po zakończeniu prac.
+4. Przywróć poprzednie pliki programu z `C:\SMS-Awarie-Backups\pre-...\app` (bez katalogu `data`) oraz `httpd.conf` z tej samej kopii. Nie podmieniaj `awarie.sqlite`.
+5. Zrestartuj Apache (przy powrocie do 3.x włącz zadanie `SMS-Awarie-v3-Web`); usuń `watchdog.pause` dopiero po zakończeniu prac.
 6. Sprawdź autoryzację, zgłoszenia, heartbeat i statusy `outbox`.
 
 ## 3. Przywracanie SQLite — tylko po potwierdzonej awarii danych
-1. Zatrzymaj wszystkie procesy korzystające z SQLite (receiver, API/Apache, zadania backupu); zabezpiecz oryginalne `awarie.sqlite`, `awarie.sqlite-wal`, `awarie.sqlite-shm` razem w odrębnej lokalizacji.
+1. Zatrzymaj wszystkie procesy korzystające z SQLite (receiver, Apache, zadania backupu); zabezpiecz oryginalne `awarie.sqlite`, `awarie.sqlite-wal`, `awarie.sqlite-shm` razem w odrębnej lokalizacji.
 2. Zweryfikuj datę i integralność kopii logicznej (`PRAGMA integrity_check = ok`) na **osobnej kopii roboczej**.
 3. Ustal punkt odtworzenia i porównaj z dziennikami/wiadomościami modemu. Przywrócenie wcześniejszego pliku może utracić SMS, zgłoszenia i zmiany statusów utworzone po backupie.
 4. Po zgodzie właściciela danych podmień bazę na zweryfikowaną kopię logiczną **przy zatrzymanych procesach**; nie mieszaj starej bazy z nowymi plikami WAL/SHM. Zostaw niezmienioną konfigurację.
