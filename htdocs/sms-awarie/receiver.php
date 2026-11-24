@@ -29,7 +29,7 @@ function login(){
 class LoginRejected extends Exception {}
 
 function sendOne($p){
-    $stmt=$p->query("SELECT * FROM outbox WHERE status='OCZEKUJE' ORDER BY created LIMIT 1");$r=$stmt->fetch();$stmt->closeCursor();
+    $stmt=$p->query("SELECT * FROM outbox WHERE status='OCZEKUJE' ORDER BY created,id".sql_page($p,1));$r=$stmt->fetch();$stmt->closeCursor();
     if(!$r)return false;
     token();
     $q=$p->prepare("UPDATE outbox SET status='W_TRAKCIE' WHERE id=? AND status='OCZEKUJE'");$q->execute([$r['id']]);if(!$q->rowCount())return false;
@@ -90,7 +90,7 @@ function processMessage(PDO $p,string $id,string $idx,string $sender,string $con
                 $status=$vehicle?'NOWE':'WERYFIKACJA';
             }else{$status='NOWE';}
         }
-        $p->prepare('INSERT INTO sms VALUES(?,?,?,?,?,?)')->execute([$id,$idx,$sender,$content,$date,$status]);
+        $p->prepare('INSERT INTO sms(id,modem_index,sender,content,received,status) VALUES(?,?,?,?,?,?)')->execute([$id,$idx,$sender,$content,$date,$status]);
         if($valid){
             $tid=uid();$created=date('Y-m-d H:i:s');
             $p->prepare('INSERT INTO tickets(id,sms_id,plate,description,status,created,seq) VALUES(?,?,?,?,?,?,?)')->execute([$tid,$id,$reg,$description,$status,$created,nextTicketSeq($p,$created)]);
@@ -105,7 +105,7 @@ function processMessage(PDO $p,string $id,string $idx,string $sender,string $con
         $p->rollBack();
         echo date('c').' [SMS BLAD] '.$id.' '.$e->getMessage().PHP_EOL;
         // Zapis samego SMS ze statusem BLAD, zeby nie byl przetwarzany w kolko i byl widoczny w panelu.
-        $p->prepare('INSERT OR IGNORE INTO sms VALUES(?,?,?,?,?,?)')->execute([$id,$idx,$sender,$content,$date,'BLAD']);
+        insert_ignore($p,'INSERT INTO sms(id,modem_index,sender,content,received,status) VALUES(?,?,?,?,?,?)',[$id,$idx,$sender,$content,$date,'BLAD']);
         return true;
     }
 }
@@ -115,10 +115,16 @@ $cfg=config();
 if(in_array(trim((string)$cfg['modempass']),['','CHANGE_ME'],true))exit('Ustaw prawdziwe haslo modemu w data/config.json lub w panelu.');
 $deleteAfterImport=!array_key_exists('delete_after_import',$cfg)||!empty($cfg['delete_after_import']);
 $sendPerCycle=max(1,min(20,(int)($cfg['send_per_cycle']??5)));
-$p=db('sqlite',$cfg);ensureSchema($p);
+$dbSig=db_signature(db_settings($cfg));
+$p=null; // polaczenie z baza nawiazuje petla (takze ponownie po bledzie)
 $ch=null;$token='';
 while(true){
     try{
+        // 4.2.0: przelaczanie bazy w panelu wstrzymuje odbiornik (data\maintenance.flag), a po zmianie
+        // ustawien "db" w config.json odbiornik laczy sie z nowa baza bez restartu.
+        if(is_file(MAINTENANCE_FLAG)){$receiverPhase='paused';receiverHeartbeat('RUNNING');sleep(2);continue;}
+        $dbNow=db_settings(config());
+        if(!$p||db_signature($dbNow)!==$dbSig){$p=null;$p=db($dbNow);ensureSchema($p);$dbSig=db_signature($dbNow);echo date('c').' [BAZA] '.db_label($dbNow).PHP_EOL;}
         $receiverPhase='polling';$receiverLastError='';receiverHeartbeat('RUNNING');
         if(!$ch)login();
         $toDelete=[];
@@ -156,6 +162,7 @@ while(true){
         try{receiverHeartbeat('ERROR');}catch(Throwable $ignored){}
         echo date('c').' '.$e->getMessage()."\n";
         if($ch)curl_close($ch);$ch=null;
+        if($e instanceof PDOException)$p=null; // polaczenie z baza (np. MS SQL) zostanie nawiazane ponownie
         // Po odrzuconym logowaniu dluzsza przerwa, zeby nie zablokowac konta admin modemu.
         sleep($e instanceof LoginRejected?300:60);
     }

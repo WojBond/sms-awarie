@@ -1,11 +1,34 @@
 <?php
-// Wspolny szablon strony. Uzycie: layout_start($title, $u, $page); ... layout_end();
+// Wspolny szablon strony z menu bocznym. Uzycie: layout_start($title, $u, $page); ... layout_end();
+
+// Menu: [strona, etykieta, parametry, rola] albo [null, etykieta, [], rola, podmenu].
+function nav_items(?array $u): array {
+    $groups = [['groups', 'Wszystkie grupy', [], '']];
+    try {
+        foreach (rows($GLOBALS['p'], 'SELECT id,name FROM incident_groups WHERE active=1 ORDER BY legacy_vehicle DESC, name') as $g) $groups[] = ['group', $g['name'], ['id' => $g['id']], ''];
+    } catch (Throwable $e) { /* menu bez listy grup */ }
+    return [
+        ['dashboard', 'Dashboard', [], ''],
+        ['tickets', 'Zgłoszenia', [], ''],
+        ['messages', 'SMS odebrane', [], ''],
+        ['outbox', 'SMS wychodzące', [], ''],
+        [null, 'Grupy zgłoszeń', [], '', $groups],
+        ['users', 'Użytkownicy', [], 'admin'],
+        [null, 'Ustawienia', [], 'admin', [['settings', 'Autoodpowiedzi', [], ''], ['modem', 'Modem', [], ''], ['database', 'Baza danych', [], '']]],
+        ['logs', 'Dziennik zdarzeń', [], 'admin'],
+    ];
+}
+function nav_current(string $page, array $params): bool {
+    if ($page !== ($GLOBALS['navPage'] ?? '')) return false;
+    foreach ($params as $k => $v) if ((string)($_GET[$k] ?? '') !== (string)$v) return false;
+    return true;
+}
+function nav_link(array $i): string {
+    return '<a href="'.h(url($i[0], $i[2])).'"'.(nav_current($i[0], $i[2]) ? ' aria-current="page"' : '').'>'.h($i[1]).'</a>';
+}
 
 function layout_start(string $title, ?array $u, string $page): void {
-    $nav = [
-        'Obsługa' => ['dashboard' => 'Dashboard', 'tickets' => 'Zgłoszenia', 'messages' => 'SMS odebrane', 'outbox' => 'SMS wychodzące', 'vehicles' => 'Pojazdy'],
-        'Administracja' => ['groups' => 'Grupy zgłoszeń', 'users' => 'Użytkownicy', 'settings' => 'Ustawienia i modem', 'database' => 'Baza danych', 'logs' => 'Dziennik zdarzeń'],
-    ];
+    $GLOBALS['navPage'] = $page;
     ?><!doctype html>
 <html lang="pl">
 <head>
@@ -15,24 +38,32 @@ function layout_start(string $title, ?array $u, string $page): void {
 <link rel="stylesheet" href="<?= asset('assets/css/app.css') ?>">
 <script src="<?= asset('assets/js/app.js') ?>" defer></script>
 </head>
-<body>
+<body<?= $u ? ' class="with-side"' : '' ?>>
 <?php if ($u): ?>
+<input type="checkbox" id="navt" class="navt" aria-hidden="true" tabindex="-1">
 <header class="top">
+  <label for="navt" class="btn btn-o" role="button">Menu</label>
   <a class="brand" href="<?= h(url('dashboard')) ?>">SMS-Awarie</a>
-  <details class="menu">
-    <summary class="btn btn-o">Menu</summary>
-    <nav>
-    <?php foreach ($nav as $group => $items): if ($group === 'Administracja' && !is_admin($u)) continue; ?>
-      <p class="nav-h"><?= h($group) ?></p>
-      <?php foreach ($items as $key => $label): ?>
-        <a href="<?= h(url($key)) ?>"<?= $key === $page ? ' aria-current="page"' : '' ?>><?= h($label) ?></a>
-      <?php endforeach; ?>
-    <?php endforeach; ?>
-    </nav>
-  </details>
-  <span class="who"><?= h($u['login']) ?> · <?= h(ROLES[$u['role']] ?? $u['role']) ?></span>
-  <form method="post" action="<?= h(url('logout')) ?>" class="inline"><?= csrf_field() ?><button class="btn btn-o">Wyloguj</button></form>
 </header>
+<label for="navt" class="side-shade" aria-hidden="true"></label>
+<aside class="side">
+  <a class="brand" href="<?= h(url('dashboard')) ?>">SMS-Awarie</a>
+  <nav aria-label="Menu główne">
+  <?php foreach (nav_items($u) as $i): if ($i[3] === 'admin' && !is_admin($u)) continue; ?>
+    <?php if ($i[0] !== null): echo nav_link($i); else:
+      $active = false; foreach ($i[4] as $c) $active = $active || nav_current($c[0], $c[2]); ?>
+      <details class="sub" open>
+        <summary<?= $active ? ' class="active"' : '' ?>><?= h($i[1]) ?></summary>
+        <?php foreach ($i[4] as $c) echo nav_link($c); ?>
+      </details>
+    <?php endif; ?>
+  <?php endforeach; ?>
+  </nav>
+  <div class="side-foot">
+    <span class="who"><?= h($u['login']) ?> · <?= h(ROLES[$u['role']] ?? $u['role']) ?></span>
+    <form method="post" action="<?= h(url('logout')) ?>" class="inline"><?= csrf_field() ?><button class="btn btn-o">Wyloguj</button></form>
+  </div>
+</aside>
 <?php endif; ?>
 <main>
 <h1><?= h($title) ?></h1>

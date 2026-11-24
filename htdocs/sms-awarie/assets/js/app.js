@@ -27,13 +27,9 @@ document.addEventListener('DOMContentLoaded', function () {
       .catch(function () {});
   }
 
-  // Menu: na szerokim ekranie zawsze rozwiniete, na telefonie / Zebrze rozwijane przyciskiem.
-  var menu = document.querySelector('details.menu');
-  var wide = window.matchMedia('(min-width: 1000px)');
-  function syncMenu() { if (menu) { if (wide.matches) menu.setAttribute('open', ''); else menu.removeAttribute('open'); } }
-  syncMenu();
-  if (wide.addEventListener) wide.addEventListener('change', syncMenu);
-  document.addEventListener('click', function (e) {
-    if (menu && !wide.matches && menu.open && !menu.contains(e.target)) menu.removeAttribute('open');
+  // Menu boczne na telefonie: zamknij po wyborze strony.
+  var navt = document.getElementById('navt');
+  document.querySelectorAll('.side nav a').forEach(function (a) {
+    a.addEventListener('click', function () { if (navt) navt.checked = false; });
   });
 });

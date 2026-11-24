@@ -9,12 +9,15 @@ try {
     foreach ([DATA_DIR, LOG_DIR, DATA_DIR.'/backups'] as $d) if (!is_dir($d) && !mkdir($d, 0700, true)) throw new RuntimeException("Nie mozna utworzyc $d");
     if (!is_file(DATA_DIR.'/config.json')) {
         saveconfig(['modem' => 'http://192.168.8.1', 'modempass' => 'CHANGE_ME', 'ack' => false, 'own_phone' => '', 'ack_template' => '', 'delete_after_import' => true, 'send_per_cycle' => 5]);
-        echo "Utworzono data\\config.json - ustaw haslo modemu w panelu (Ustawienia i modem).\n";
+        echo "Utworzono data\\config.json - ustaw haslo modemu w panelu (Ustawienia > Modem).\n";
     }
-    $p = db();
-    $before = (int)$p->query('PRAGMA user_version')->fetchColumn();
+    $s = db_settings();
+    if ($s['driver'] === 'sqlsrv' && $s['pdo'] !== 'odbc' && !extension_loaded('pdo_sqlsrv')) throw new RuntimeException('Baza MS SQL wymaga rozszerzenia pdo_sqlsrv (docs\\MSSQL.md)');
+    $p = db($s);
+    $before = schema_version($p);
     ensureSchema($p);
-    $after = (int)$p->query('PRAGMA user_version')->fetchColumn();
+    $after = schema_version($p);
+    echo 'Baza: '.db_label($s)."\n";
     $users = (int)$p->query('SELECT COUNT(*) FROM web_users')->fetchColumn();
     echo "Baza OK: schemat v$before -> v$after, zgloszen: ".$p->query('SELECT COUNT(*) FROM tickets')->fetchColumn().", kont: $users\n";
     if ($users === 0) echo "Brak kont - pierwszego administratora utworzysz w przegladarce przy pierwszym wejsciu.\n";

@@ -1,5 +1,14 @@
 # Changelog SMS-Awarie
 
+## 4.2.0 – 2026-11-24 (minor)
+- **MS SQL Server** jako alternatywa dla SQLite (`db.php`, `docs/MSSQL.md`). W Ustawienia › Baza danych: test połączenia, opcjonalne utworzenie bazy, przełączenie z przeniesieniem obecnych danych (z porównaniem liczby wierszy) albo od pustej bazy (tylko konta), użycie istniejącej bazy i powrót do SQLite. Domyślnie nadal SQLite.
+- Odbiornik czyta ustawienia bazy w każdym cyklu: wstrzymuje się na czas przełączania (`data\maintenance.flag`), łączy się z nową bazą bez restartu i ponawia połączenie po awarii serwera SQL.
+- Kopie MS SQL: `BACKUP DATABASE ... COPY_ONLY, CHECKSUM` + `RESTORE VERIFYONLY` (zadanie backupu i przycisk w panelu), kontrola `DBCC CHECKDB`. `cli\db.php status|sqlite`.
+- Zapytania niezależne od bazy (stronicowanie, `INSERT` z listą kolumn, bez `INSERT OR IGNORE` i `substr`); `config.json` zapisywany atomowo.
+- **Menu boczne** zamiast górnego (na telefonie i Zebrze wysuwane przyciskiem Menu, bez JavaScriptu).
+- **Grupy zgłoszeń** z podmenu: każda aktywna grupa (np. Pojazdy) ma własną stronę ze statystykami, ostatnimi zgłoszeniami i ustawieniami; lista pojazdów jest na stronie grupy Pojazdy. Stary adres `?p=vehicles` przekierowuje.
+- **Ustawienia** z podmenu Autoodpowiedzi, Modem, Baza danych. W Autoodpowiedziach testowy SMS na podany numer (domyślnie autoodpowiedź z przykładowymi danymi) z listą ostatnich testów i ich statusem.
+
 ## 4.1.1 – 2026-11-24 (patch)
 - XAMPP nie musi być na dysku `C:`. `install.ps1`, `install-watchdog-task.ps1`, `install-backup-task.ps1` i `verify.ps1` same znajdują XAMPP (rejestr, usługa Apache, `X:\xampp` na każdym dysku) albo przyjmują `-Xampp D:\xampp`. Wspólna funkcja w `scripts\_xampp.ps1`.
 - `install.ps1` obsługuje tylko świeżą instalację i aktualizację w htdocs. Usunięte przenoszenie danych z `C:\SMS-Awarie`, wyłączanie starych zadań i komentowanie wpisów w `httpd.conf`.

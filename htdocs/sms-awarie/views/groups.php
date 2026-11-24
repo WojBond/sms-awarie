@@ -1,80 +1,35 @@
 <?php
 require __DIR__.'/_layout.php';
-
-const TPL_HELP = 'Zmienne: {number} {group} {object} {description} {status}. Polskie litery zostaną zamienione na łacińskie.';
+require __DIR__.'/_groups.php';
 
 if ($post) {
-    $act = (string)($_POST['action'] ?? '');
-    $gid = (string)($_POST['id'] ?? '');
-    if ($act === 'save') {
-        $name = trim((string)($_POST['name'] ?? ''));
-        $prefix = strtoupper(trim((string)($_POST['prefix'] ?? '')));
-        // Szablony transliteruje notificationText() przy wysylce.
-        $senderTpl = trim((string)($_POST['sender_template'] ?? ''));
-        $recipientTpl = trim((string)($_POST['recipient_template'] ?? ''));
-        $phones = preg_split('/[\s,;]+/', (string)($_POST['recipients'] ?? ''), -1, PREG_SPLIT_NO_EMPTY);
-        $err = null;
-        if (mb_strlen($name) < 2 || mb_strlen($name) > 60) $err = 'Nazwa: 2–60 znaków.';
-        elseif (!preg_match('/^[A-Z][A-Z0-9_-]{1,15}$/D', $prefix)) $err = 'Prefiks: 2–16 znaków, zaczyna się literą (np. MAS).';
-        foreach ([$senderTpl, $recipientTpl] as $t) if (!$err && ($t === '' || mb_strlen($t) > 150)) $err = 'Szablony: 1–150 znaków.';
-        if (!$err && count($phones) > 50) $err = 'Maksymalnie 50 odbiorców.';
-        foreach ($phones as $ph) if (!$err && !preg_match('/^\+?[0-9]{9,15}$/D', $ph)) $err = "Niepoprawny numer: $ph";
-        if (!$err && one($p, 'SELECT id FROM incident_groups WHERE prefix=? AND id<>?', [$prefix, $gid])) $err = "Prefiks $prefix jest już używany.";
-        if ($err) { flash($err, 'err'); redirect('groups'); }
-
-        $active = !empty($_POST['active']) ? 1 : 0;
-        $notify = !empty($_POST['notify_sender']) ? 1 : 0;
-        $p->beginTransaction();
-        if ($gid === '') {
-            $gid = uid();
-            $p->prepare('INSERT INTO incident_groups(id,name,prefix,active,legacy_vehicle,notify_sender,sender_template,recipient_template) VALUES(?,?,?,?,0,?,?,?)')->execute([$gid, $name, $prefix, $active, $notify, $senderTpl, $recipientTpl]);
-        } else {
-            if (!one($p, 'SELECT id FROM incident_groups WHERE id=?', [$gid])) { $p->rollBack(); flash('Nie znaleziono grupy.', 'err'); redirect('groups'); }
-            if ($gid === 'vehicles') { $active = 1; $prefix = 'POJ'; }
-            $p->prepare('UPDATE incident_groups SET name=?,prefix=?,active=?,notify_sender=?,sender_template=?,recipient_template=? WHERE id=?')->execute([$name, $prefix, $active, $notify, $senderTpl, $recipientTpl, $gid]);
-        }
-        $p->prepare('DELETE FROM group_recipients WHERE group_id=?')->execute([$gid]);
-        $ins = $p->prepare('INSERT INTO group_recipients(id,group_id,phone,active) VALUES(?,?,?,1)');
-        foreach (array_unique($phones) as $ph) $ins->execute([uid(), $gid, $ph]);
-        audit($p, $u, 'groups:save', $gid.' '.$prefix);
-        $p->commit();
-        flash("Zapisano grupę $name.");
-    }
+    if (!is_admin($u)) { flash('Grupy zmienia administrator.', 'err'); redirect('groups'); }
+    if (($_POST['action'] ?? '') === 'save') { $_POST['id'] = ''; $gid = group_save($p, $u, 'groups', []); redirect('group', ['id' => $gid]); }
     redirect('groups');
 }
 
-$list = rows($p, 'SELECT * FROM incident_groups ORDER BY legacy_vehicle DESC, active DESC, name');
-$byGroup = [];
-foreach (rows($p, 'SELECT group_id,phone FROM group_recipients WHERE active=1 ORDER BY phone') as $r) $byGroup[$r['group_id']][] = $r['phone'];
-
-function group_form(array $g, array $phones): void { ?>
-  <form method="post" action="<?= h(url('groups')) ?>">
-    <?= csrf_field() ?><input type="hidden" name="action" value="save"><input type="hidden" name="id" value="<?= h($g['id']) ?>">
-    <div class="grid2">
-      <label>Nazwa<input name="name" value="<?= h($g['name']) ?>" required maxlength="60"></label>
-      <label>Prefiks SMS<input name="prefix" value="<?= h($g['prefix']) ?>" required<?= $g['id'] === 'vehicles' ? ' readonly' : '' ?> pattern="[A-Za-z][A-Za-z0-9_\-]{1,15}"></label>
-    </div>
-    <label>Odpowiedź do zgłaszającego<input name="sender_template" value="<?= h($g['sender_template']) ?>" required maxlength="150"></label>
-    <label>Powiadomienie dla odbiorców grupy<input name="recipient_template" value="<?= h($g['recipient_template']) ?>" required maxlength="150"></label>
-    <p class="muted"><?= h(TPL_HELP) ?></p>
-    <label>Odbiorcy powiadomień (jeden numer w linii)<textarea name="recipients" rows="3"><?= h(implode("\n", $phones)) ?></textarea></label>
-    <label class="check"><input type="checkbox" name="notify_sender" value="1"<?= (int)$g['notify_sender'] ? ' checked' : '' ?>> Wysyłaj potwierdzenie do zgłaszającego</label>
-    <?php if ($g['id'] !== 'vehicles'): ?><label class="check"><input type="checkbox" name="active" value="1"<?= (int)$g['active'] ? ' checked' : '' ?>> Grupa aktywna</label><?php else: ?><input type="hidden" name="active" value="1"><?php endif; ?>
-    <button class="btn">Zapisz</button>
-  </form>
-<?php }
+$list = rows($p, "SELECT g.id,g.name,g.prefix,g.active,g.legacy_vehicle,COUNT(t.id) AS total,SUM(CASE WHEN t.status IN ('NOWE','WERYFIKACJA','W_REALIZACJI') THEN 1 ELSE 0 END) AS open_count
+    FROM incident_groups g LEFT JOIN ticket_groups tg ON tg.group_id=g.id LEFT JOIN tickets t ON t.id=tg.ticket_id
+    GROUP BY g.id,g.name,g.prefix,g.active,g.legacy_vehicle ORDER BY g.legacy_vehicle DESC, g.active DESC, g.name");
+$recipients = [];
+foreach (rows($p, 'SELECT group_id,COUNT(*) AS n FROM group_recipients WHERE active=1 GROUP BY group_id') as $r) $recipients[$r['group_id']] = (int)$r['n'];
 
 layout_start($title, $u, $page);
 ?>
 <p class="muted">SMS zaczynający się od prefiksu grupy (np. „MAS CNC12 brak zasilania”) trafia do tej grupy. SMS bez prefiksu, zaczynający się od rejestracji, trafia do grupy Pojazdy.</p>
+<div class="table-wrap card"><table>
+<thead><tr><th>Grupa</th><th>Prefiks</th><th>Stan</th><th class="num">Otwarte</th><th class="num">Wszystkie</th><th class="num">Odbiorcy</th></tr></thead>
+<tbody>
 <?php foreach ($list as $g): ?>
-<details class="card item">
-  <summary><strong><?= h($g['name']) ?></strong> <span class="chip"><?= h($g['prefix']) ?></span> <?= (int)$g['active'] ? '<span class="badge b-green">Aktywna</span>' : '<span class="badge b-grey">Wyłączona</span>' ?> <small class="muted">odbiorców: <?= count($byGroup[$g['id']] ?? []) ?></small></summary>
-  <?php group_form($g, $byGroup[$g['id']] ?? []); ?>
-</details>
+  <tr><td><a href="<?= h(url('group', ['id' => $g['id']])) ?>"><strong><?= h($g['name']) ?></strong></a></td><td><span class="chip"><?= h($g['prefix']) ?></span></td>
+  <td><?= (int)$g['active'] ? '<span class="badge b-green">Aktywna</span>' : '<span class="badge b-grey">Wyłączona</span>' ?></td>
+  <td class="num"><?= (int)$g['open_count'] ?></td><td class="num"><?= (int)$g['total'] ?></td><td class="num"><?= $recipients[$g['id']] ?? 0 ?></td></tr>
 <?php endforeach; ?>
+</tbody></table></div>
+<?php if (is_admin($u)): ?>
 <details class="card item">
   <summary><strong>+ Nowa grupa</strong></summary>
-  <?php group_form(['id' => '', 'name' => '', 'prefix' => '', 'active' => 1, 'notify_sender' => 1, 'sender_template' => 'Przyjeto zgloszenie {number} dla {object}.', 'recipient_template' => 'Nowe zgloszenie {number}: {group} {object} {description}'], []); ?>
+  <?php group_form(['id' => '', 'name' => '', 'prefix' => '', 'active' => 1, 'notify_sender' => 1, 'sender_template' => 'Przyjeto zgloszenie {number} dla {object}.', 'recipient_template' => 'Nowe zgloszenie {number}: {group} {object} {description}'], [], url('groups')); ?>
 </details>
+<?php endif; ?>
 <?php layout_end();

@@ -2,7 +2,7 @@
 require __DIR__.'/_layout.php';
 
 $total = (int)one($p, 'SELECT COUNT(*) FROM web_audit');
-$audit = rows($p, 'SELECT created,actor,action,target FROM web_audit ORDER BY id DESC LIMIT '.PER_PAGE.' OFFSET '.((page_no() - 1) * PER_PAGE));
+$audit = rows($p, 'SELECT created,actor,action,target FROM web_audit ORDER BY id DESC'.sql_page($p, PER_PAGE, (page_no() - 1) * PER_PAGE));
 $receiver = array_merge(tailLines(LOG_DIR.'/receiver-stderr.log', 20), tailLines(LOG_DIR.'/receiver-stdout.log', 100));
 $events = [];
 foreach (array_reverse(tailLines(LOG_DIR.'/watchdog-events.jsonl', 30)) as $line) {

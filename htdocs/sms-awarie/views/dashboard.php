@@ -8,9 +8,9 @@ $kpis = [
     'W realizacji' => one($p, "SELECT COUNT(*) FROM tickets WHERE status='W_REALIZACJI'"),
     'SMS oczekujące' => one($p, "SELECT COUNT(*) FROM outbox WHERE status='OCZEKUJE'"),
 ];
-$groupStats = rows($p, 'SELECT g.name,COUNT(tg.ticket_id) AS total FROM incident_groups g LEFT JOIN ticket_groups tg ON tg.group_id=g.id WHERE g.active=1 GROUP BY g.id ORDER BY g.name');
-$open = rows($p, "SELECT t.id,t.plate,t.description,t.status,t.created,t.seq,COALESCE(g.name,'Pojazdy') AS group_name FROM tickets t LEFT JOIN ticket_groups tg ON tg.ticket_id=t.id LEFT JOIN incident_groups g ON g.id=tg.group_id WHERE t.status IN ('NOWE','WERYFIKACJA') ORDER BY t.created DESC LIMIT 10");
-$verify = rows($p, "SELECT phone,content,status,created,detail FROM outbox WHERE status IN ('W_TRAKCIE','NIEPEWNY') ORDER BY created DESC LIMIT 20");
+$groupStats = rows($p, 'SELECT g.name,COUNT(tg.ticket_id) AS total FROM incident_groups g LEFT JOIN ticket_groups tg ON tg.group_id=g.id WHERE g.active=1 GROUP BY g.id,g.name ORDER BY g.name');
+$open = rows($p, "SELECT t.id,t.plate,t.description,t.status,t.created,t.seq,COALESCE(g.name,'Pojazdy') AS group_name FROM tickets t LEFT JOIN ticket_groups tg ON tg.ticket_id=t.id LEFT JOIN incident_groups g ON g.id=tg.group_id WHERE t.status IN ('NOWE','WERYFIKACJA') ORDER BY t.created DESC".sql_page($p, 10));
+$verify = rows($p, "SELECT phone,content,status,created,detail FROM outbox WHERE status IN ('W_TRAKCIE','NIEPEWNY') ORDER BY created DESC".sql_page($p, 20));
 $modem = $hb['raw']['modem'] ?? null;
 $wd = is_admin($u) ? @json_decode((string)@file_get_contents(DATA_DIR.'/watchdog-state.json'), true) : null;
 

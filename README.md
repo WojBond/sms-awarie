@@ -12,6 +12,7 @@ System zgłaszania awarii SMS-em: modem Huawei E5373 odbiera SMS, odbiornik PHP 
 | `htdocs/sms-awarie/watchdog.ps1` | `<XAMPP>\htdocs\sms-awarie\` | Co minutę (Harmonogram zadań) pilnuje odbiornika i restartuje go z limitem 3/h. |
 | `htdocs/sms-awarie/backup.php` | `<XAMPP>\htdocs\sms-awarie\` | Codzienna kopia bazy z retencją. |
 | `htdocs/sms-awarie/index.php`, `htdocs/sms-awarie/assets/` | `http://serwer/sms-awarie/` | Panel WWW. Reszta plików jest zablokowana przez `.htaccess`. |
+| `htdocs/sms-awarie/db.php` | | Połączenie z bazą: SQLite (domyślnie) albo MS SQL Server (`docs/MSSQL.md`). |
 | `htdocs/sms-awarie/data/` | `<XAMPP>\htdocs\sms-awarie\data\` | Baza `awarie.sqlite`, `config.json`, heartbeat, kopie. Poza repozytorium. |
 
 Wymagania: Windows 10/11, XAMPP z PHP 8.2+ i `AllowOverride All` dla htdocs (domyślne w XAMPP) (`pdo_sqlite`, `curl`, `SimpleXML`), modem w sieci hosta. **Bez Node.js i npm.**

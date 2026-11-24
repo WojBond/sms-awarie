@@ -2,37 +2,46 @@
 // Wersja schematu bazy. Podnies przy kazdej zmianie DDL; migracje uruchamiaja sie raz.
 const SCHEMA_VERSION = 3;
 function ensureSchema(PDO $p): void {
-    if((int)$p->query('PRAGMA user_version')->fetchColumn()>=SCHEMA_VERSION) return;
-    schema($p,'sqlite');
-    $p->exec('CREATE TABLE IF NOT EXISTS web_users(id TEXT PRIMARY KEY, login TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, role TEXT NOT NULL)');
-    $p->exec('CREATE TABLE IF NOT EXISTS web_audit(id INTEGER PRIMARY KEY, created TEXT NOT NULL, actor TEXT NOT NULL, action TEXT NOT NULL, target TEXT NOT NULL)');
-    groupsSchema($p);
-    $p->exec('CREATE INDEX IF NOT EXISTS idx_outbox_status ON outbox(status,created)');
-    $p->exec('CREATE INDEX IF NOT EXISTS idx_tickets_created ON tickets(created)');
-    $p->exec('CREATE INDEX IF NOT EXISTS idx_sms_received ON sms(received)');
-    $p->exec('CREATE INDEX IF NOT EXISTS idx_ticket_groups_group ON ticket_groups(group_id)');
-    $p->exec('CREATE INDEX IF NOT EXISTS idx_tickets_plate ON tickets(plate)');
-    // v3 (4.0.0): soft delete pojazdow i uzytkownikow, kolejny numer zgloszenia w roku.
-    if(!hasColumn($p,'vehicles','active'))$p->exec('ALTER TABLE vehicles ADD COLUMN active INTEGER NOT NULL DEFAULT 1');
-    if(!hasColumn($p,'tickets','seq'))$p->exec('ALTER TABLE tickets ADD COLUMN seq INTEGER');
-    if(!hasColumn($p,'web_users','active'))$p->exec('ALTER TABLE web_users ADD COLUMN active INTEGER NOT NULL DEFAULT 1');
-    $p->exec('PRAGMA user_version='.SCHEMA_VERSION);
+    if(schema_version($p)>=SCHEMA_VERSION) return;
+    if(db_is_mssql($p)){
+        // 4.2.0: MS SQL - od razu pelny schemat v3.
+        mssqlSchema($p);
+    }else{
+        schema($p,'sqlite');
+        $p->exec('CREATE TABLE IF NOT EXISTS web_users(id TEXT PRIMARY KEY, login TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, role TEXT NOT NULL)');
+        $p->exec('CREATE TABLE IF NOT EXISTS web_audit(id INTEGER PRIMARY KEY, created TEXT NOT NULL, actor TEXT NOT NULL, action TEXT NOT NULL, target TEXT NOT NULL)');
+        groupsSchema($p);
+        $p->exec('CREATE INDEX IF NOT EXISTS idx_outbox_status ON outbox(status,created)');
+        $p->exec('CREATE INDEX IF NOT EXISTS idx_tickets_created ON tickets(created)');
+        $p->exec('CREATE INDEX IF NOT EXISTS idx_sms_received ON sms(received)');
+        $p->exec('CREATE INDEX IF NOT EXISTS idx_ticket_groups_group ON ticket_groups(group_id)');
+        $p->exec('CREATE INDEX IF NOT EXISTS idx_tickets_plate ON tickets(plate)');
+        // v3 (4.0.0): soft delete pojazdow i uzytkownikow, kolejny numer zgloszenia w roku.
+        if(!hasColumn($p,'vehicles','active'))$p->exec('ALTER TABLE vehicles ADD COLUMN active INTEGER NOT NULL DEFAULT 1');
+        if(!hasColumn($p,'tickets','seq'))$p->exec('ALTER TABLE tickets ADD COLUMN seq INTEGER');
+        if(!hasColumn($p,'web_users','active'))$p->exec('ALTER TABLE web_users ADD COLUMN active INTEGER NOT NULL DEFAULT 1');
+    }
+    groupsSeed($p);
+    set_schema_version($p,SCHEMA_VERSION);
 }
-// SMS-Awarie v3.1: SQLite-only additive schema; no modifications to historical tables.
+// SMS-Awarie v3.1: tabele grup (SQLite).
 function groupsSchema(PDO $p): void {
     $p->exec("CREATE TABLE IF NOT EXISTS incident_groups (id TEXT PRIMARY KEY, name TEXT NOT NULL, prefix TEXT NOT NULL UNIQUE, active INTEGER NOT NULL DEFAULT 1, legacy_vehicle INTEGER NOT NULL DEFAULT 0, notify_sender INTEGER NOT NULL DEFAULT 1, sender_template TEXT NOT NULL DEFAULT 'Przyjeto zgloszenie {number} dla {object}.', recipient_template TEXT NOT NULL DEFAULT 'Nowe zgloszenie {number}: {group} {object} {description}')");
     $p->exec("CREATE TABLE IF NOT EXISTS group_recipients (id TEXT PRIMARY KEY, group_id TEXT NOT NULL REFERENCES incident_groups(id), phone TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1, UNIQUE(group_id,phone))");
     $p->exec("CREATE TABLE IF NOT EXISTS ticket_groups (ticket_id TEXT PRIMARY KEY REFERENCES tickets(id), group_id TEXT NOT NULL REFERENCES incident_groups(id), object_code TEXT NOT NULL)");
     $p->exec("CREATE TABLE IF NOT EXISTS notification_deliveries (id TEXT PRIMARY KEY, ticket_id TEXT NOT NULL REFERENCES tickets(id), recipient TEXT NOT NULL, kind TEXT NOT NULL, outbox_id TEXT NOT NULL UNIQUE REFERENCES outbox(id), UNIQUE(ticket_id,recipient,kind))");
+}
+// Grupa Pojazdy (z ustawien autoodpowiedzi) i przypisanie starszych zgloszen. Dziala w obu bazach.
+function groupsSeed(PDO $p): void {
     $c=config();
     $ack=!empty($c['ack'])?1:0;
     $template=trim((string)($c['ack_template']??''));
     if($template==='')$template='Przyjeto zgloszenie {number} dla {object}.';
     $template=str_replace('{plate}','{object}',$template);
-    $q=$p->prepare("INSERT OR IGNORE INTO incident_groups(id,name,prefix,active,legacy_vehicle,notify_sender,sender_template) VALUES('vehicles','Pojazdy','POJ',1,1,?,?)");
-    $q->execute([$ack,$template]);
+    if(!(int)$p->query("SELECT COUNT(*) FROM incident_groups WHERE id='vehicles'")->fetchColumn())
+        $p->prepare("INSERT INTO incident_groups(id,name,prefix,active,legacy_vehicle,notify_sender,sender_template) VALUES('vehicles','Pojazdy','POJ',1,1,?,?)")->execute([$ack,$template]);
     // Historical tickets are classified but no historical notification is generated.
-    $p->exec("INSERT OR IGNORE INTO ticket_groups(ticket_id,group_id,object_code) SELECT id,'vehicles',plate FROM tickets");
+    $p->exec("INSERT INTO ticket_groups(ticket_id,group_id,object_code) SELECT t.id,'vehicles',t.plate FROM tickets t WHERE NOT EXISTS (SELECT 1 FROM ticket_groups x WHERE x.ticket_id=t.id)");
 }
 function groupForMessage(PDO $p,string $message): array {
     $text=trim($message);
@@ -42,7 +51,7 @@ function groupForMessage(PDO $p,string $message): array {
         if($g) return [$g,trim(substr($text,strlen($m[1])))];
     }
     // Legacy vehicles: registration starts with letters/digits, contains a digit, followed by description.
-    $q=$p->query("SELECT * FROM incident_groups WHERE legacy_vehicle=1 AND active=1 LIMIT 1");$g=$q->fetch();$q->closeCursor();
+    $q=$p->query("SELECT * FROM incident_groups WHERE legacy_vehicle=1 AND active=1 ORDER BY id".sql_page($p,1));$g=$q->fetch();$q->closeCursor();
     if($g && preg_match('/^([A-Za-z0-9-]{4,12})\s+(.+)$/su',$text,$m) && preg_match('/\d/',$m[1])) return [$g,$text];
     return [null,$text];
 }

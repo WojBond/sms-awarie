@@ -8,7 +8,7 @@ if ($f['status'] !== '') { $where[] = 'status=?'; $args[] = $f['status']; }
 if ($f['q'] !== '') { $where[] = '(sender LIKE ? OR content LIKE ?)'; array_push($args, "%{$f['q']}%", "%{$f['q']}%"); }
 $w = $where ? ' WHERE '.implode(' AND ', $where) : '';
 $total = (int)one($p, "SELECT COUNT(*) FROM sms$w", $args);
-$list = rows($p, "SELECT sender,content,received,status FROM sms$w ORDER BY received DESC LIMIT ".PER_PAGE.' OFFSET '.((page_no() - 1) * PER_PAGE), $args);
+$list = rows($p, "SELECT sender,content,received,status FROM sms$w ORDER BY received DESC".sql_page($p, PER_PAGE, (page_no() - 1) * PER_PAGE), $args);
 $statuses = array_column(rows($p, 'SELECT DISTINCT status FROM sms ORDER BY status'), 'status');
 
 layout_start($title, $u, $page);
