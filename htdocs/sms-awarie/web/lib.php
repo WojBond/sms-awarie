@@ -3,6 +3,10 @@
 
 const ROLES = ['admin' => 'Administrator', 'operator' => 'Operator', 'read-only' => 'Tylko odczyt'];
 const TICKET_STATUSES = ['NOWE' => 'Nowe', 'WERYFIKACJA' => 'Weryfikacja', 'W_REALIZACJI' => 'W realizacji', 'ZAMKNIETE' => 'Zamknięte'];
+// Czytelne nazwy pozostalych statusow (SMS, wysylki, odbiornik). W bazie zostaja kody.
+const STATUS_LABELS = TICKET_STATUSES + ['OCZEKUJE' => 'Oczekuje', 'W_TRAKCIE' => 'W trakcie', 'PRZYJETY' => 'Przyjęty przez modem', 'WYSLANO' => 'Wysłano',
+    'NIEPEWNY' => 'Niepewny', 'ANULOWANY' => 'Anulowany', 'NIEPOPRAWNY' => 'Niepoprawny', 'BLAD' => 'Błąd', 'ERROR' => 'Błąd',
+    'OFFLINE' => 'Offline', 'RUNNING' => 'Działa', 'UNKNOWN' => 'Nieznany'];
 const PER_PAGE = 50;
 
 function h($v): string { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
@@ -61,11 +65,11 @@ function badge(string $status): string {
         'NOWE', 'OCZEKUJE' => 'b-blue',
         'WERYFIKACJA', 'W_TRAKCIE', 'NIEPEWNY' => 'b-amber',
         'W_REALIZACJI' => 'b-violet',
-        'ZAMKNIETE', 'PRZYJETY', 'RUNNING' => 'b-green',
+        'ZAMKNIETE', 'PRZYJETY', 'WYSLANO', 'RUNNING' => 'b-green',
         'NIEPOPRAWNY', 'BLAD', 'ERROR', 'OFFLINE', 'ANULOWANY' => 'b-red',
         default => 'b-grey',
     };
-    $label = TICKET_STATUSES[$status] ?? $status;
+    $label = STATUS_LABELS[$status] ?? $status;
     return '<span class="badge '.$cls.'">'.h($label).'</span>';
 }
 

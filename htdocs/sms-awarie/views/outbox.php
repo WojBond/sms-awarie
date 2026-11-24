@@ -51,7 +51,7 @@ layout_start($title, $u, $page);
 <form method="get" class="filters card">
   <input type="hidden" name="p" value="outbox">
   <label>Szukaj<input name="q" value="<?= h($f['q']) ?>" placeholder="telefon, treść"></label>
-  <label>Status<select name="status"><option value="">Wszystkie</option><?php foreach (['OCZEKUJE', 'W_TRAKCIE', 'PRZYJETY', 'NIEPEWNY', 'ANULOWANY'] as $s): ?><option<?= $f['status'] === $s ? ' selected' : '' ?>><?= h($s) ?></option><?php endforeach; ?></select></label>
+  <label>Status<select name="status"><option value="">Wszystkie</option><?php foreach (['OCZEKUJE', 'W_TRAKCIE', 'PRZYJETY', 'NIEPEWNY', 'ANULOWANY'] as $s): ?><option value="<?= h($s) ?>"<?= $f['status'] === $s ? ' selected' : '' ?>><?= h(STATUS_LABELS[$s] ?? $s) ?></option><?php endforeach; ?></select></label>
   <button class="btn">Filtruj</button>
 </form>
 <div class="table-wrap"><table>

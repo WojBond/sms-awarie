@@ -20,12 +20,17 @@ if ($post) {
 }
 layout_start('Pierwsze uruchomienie', null, 'setup');
 ?>
-<p>W bazie nie ma jeszcze żadnego konta. Utwórz konto administratora.</p>
-<form method="post" action="<?= h(url('setup')) ?>" class="card narrow">
+<div class="auth">
+<form method="post" action="<?= h(url('setup')) ?>" class="card">
+  <?= brand() ?>
+  <h1>Pierwsze uruchomienie</h1>
+  <p class="muted">W bazie nie ma jeszcze żadnego konta. Utwórz konto administratora.</p>
+  <?php flash_html(); ?>
   <?= csrf_field() ?>
   <label>Login<input name="login" required autofocus pattern="[a-zA-Z0-9_.\-]{3,64}"></label>
   <label>Hasło (min. 12 znaków)<input name="password" type="password" required minlength="12" autocomplete="new-password"></label>
   <label>Powtórz hasło<input name="password2" type="password" required minlength="12" autocomplete="new-password"></label>
   <button class="btn">Utwórz administratora</button>
 </form>
+</div>
 <?php layout_end();

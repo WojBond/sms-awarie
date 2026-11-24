@@ -1,7 +1,15 @@
 <?php
 // SMS-Awarie - wersja, changelog, strefa czasowa i sciezki. Jedno zrodlo prawdy dla numeru wersji.
-define('APP_VERSION', '4.2.0');
+define('APP_VERSION', '4.3.0');
 const APP_CHANGELOG = [
+    '4.3.0' => [
+        'Odswiezony wyglad panelu: ikony w menu bocznym, znak aplikacji, karty z cieniem, kolorowe paski statusow na licznikach.',
+        'Na telefonie i Zebrze listy (Dashboard, SMS, wysylki, grupy, dziennik) jako karty zamiast tabel przewijanych w bok; strona nie przesuwa sie juz w poziomie.',
+        'Liczniki na Dashboardzie i grupy prowadza do przefiltrowanych list; numery zgloszen na stronie grupy sa linkami.',
+        'Czytelne nazwy statusow (Oczekuje, Przyjety przez modem, Niepoprawny, Blad) zamiast kodow, takze w filtrach.',
+        'Plakietka wersji w stopce menu bocznego (nie zaslania tresci); uzytkownik z rola i przycisk Wyloguj z ikona.',
+        'Nowy ekran logowania i pierwszego uruchomienia; wieksze pola dotyku i widoczny fokus klawiatury.',
+    ],
     '4.2.0' => [
         'Baza MS SQL Server jako alternatywa dla SQLite: Ustawienia > Baza danych - test polaczenia, przelaczenie z przeniesieniem obecnych danych albo od pustej bazy, powrot do SQLite.',
         'Odbiornik laczy sie z nowa baza bez restartu i wstrzymuje sie na czas przelaczania; kopie MS SQL przez BACKUP DATABASE (COPY_ONLY) z weryfikacja.',
