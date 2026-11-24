@@ -7,7 +7,7 @@
 - **Uszkodzona baza:** najpierw zabezpiecz oryginał wraz z WAL/SHM, następnie wykonaj diagnostykę i odzyskuj na kopii.
 
 ## 2. Bezpieczny rollback kodu
-1. Utwórz `C:\SMS-Awarie\data\watchdog.pause`, wyłącz nowe zadanie Harmonogramu i inne autostarty.
+1. Utwórz `<katalog aplikacji>\data\watchdog.pause`, wyłącz nowe zadanie Harmonogramu i inne autostarty.
 2. Zweryfikuj pełną ścieżkę i PID `receiver.php`. Poczekaj na koniec przetwarzania; zatrzymaj proces dopiero w oknie serwisowym.
 3. Zabezpiecz aktualną bazę, konfigurację, heartbeat, logi i kopię obecnego kodu (materiał do analizy).
 4. Przywróć poprzednie pliki programu z `C:\SMS-Awarie-Backups\pre-...\app` (bez katalogu `data`) oraz `httpd.conf` z tej samej kopii. Nie podmieniaj `awarie.sqlite`.
@@ -25,10 +25,10 @@
 ```powershell
 Get-ScheduledTask | Where-Object TaskName -like '*SMS*'
 Get-CimInstance Win32_Process -Filter "Name='php.exe'" | Where-Object CommandLine -like '*receiver.php*' | Select-Object ProcessId,CommandLine
-Get-Content 'C:\SMS-Awarie\data\watchdog-state.json' -Raw
-Get-Content 'C:\SMS-Awarie\data\heartbeat.json' -Raw
-Get-Content 'C:\SMS-Awarie\logs\watchdog-events.jsonl' -Tail 50
-& 'C:\xampp\php\php.exe' -r '$db=new PDO("sqlite:C:/SMS-Awarie/data/awarie.sqlite"); echo $db->query("PRAGMA integrity_check")->fetchColumn();'
+Get-Content 'C:\xampp\htdocs\sms-awarie\data\watchdog-state.json' -Raw
+Get-Content 'C:\xampp\htdocs\sms-awarie\data\heartbeat.json' -Raw
+Get-Content 'C:\xampp\htdocs\sms-awarie\logs\watchdog-events.jsonl' -Tail 50
+& 'C:\xampp\php\php.exe' -r '$db=new PDO("sqlite:C:/xampp/htdocs/sms-awarie/data/awarie.sqlite"); echo $db->query("PRAGMA integrity_check")->fetchColumn();'
 ```
 
 ## 5. Postępowanie przy braku możliwości odzyskania

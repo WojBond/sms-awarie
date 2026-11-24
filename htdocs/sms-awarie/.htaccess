@@ -1,0 +1,13 @@
+# SMS-Awarie - ochrona katalogu w htdocs. Przez WWW dostepne sa tylko index.php i assets/.
+# Wymaga AllowOverride All dla htdocs (domyslne w XAMPP). Sprawdzenie: scripts\verify.ps1.
+Options -Indexes
+DirectoryIndex index.php
+<FilesMatch "\.(php|ps1|json|jsonl|sqlite|sqlite-wal|sqlite-shm|db|log|lock|md|txt|conf|bak|tmp|pause)$">
+    Require all denied
+</FilesMatch>
+<FilesMatch "^\.ht">
+    Require all denied
+</FilesMatch>
+<Files "index.php">
+    Require all granted
+</Files>

@@ -1,9 +1,9 @@
 <?php
-// SMS-Awarie - panel WWW (router). Udostepniany przez Apache: Alias /sms-awarie -> C:/SMS-Awarie/public
+// SMS-Awarie - panel WWW (router). Katalog aplikacji: C:\xampp\htdocs\sms-awarie, adres http://serwer/sms-awarie/
 ini_set('display_errors', '0');
-require __DIR__.'/../common.php';
-require __DIR__.'/../groups.php';
-require __DIR__.'/../web/lib.php';
+require __DIR__.'/common.php';
+require __DIR__.'/groups.php';
+require __DIR__.'/web/lib.php';
 
 session_name('smsawarie');
 session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax', 'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off']);

@@ -1,5 +1,14 @@
 # Changelog SMS-Awarie
 
+## 4.1.0 – 2026-11-24 (minor)
+- Aplikacja instalowana w standardowym folderze stron XAMPP: `C:\xampp\htdocs\sms-awarie` (adres bez zmian: `http://serwer/sms-awarie/`). Nie trzeba już dopisywać `Alias`/`Include` w `httpd.conf`.
+- `index.php` i `assets/` przeniesione z `public/` do katalogu głównego aplikacji. Główny `.htaccess` blokuje dostęp z przeglądarki do wszystkiego poza `index.php` i `assets/`, a `data`, `logs`, `cli`, `views`, `web` mają własne `Require all denied`.
+- Dashboard (dla administratora) ostrzega, gdy `data/config.json` jest dostępny z przeglądarki (brak `AllowOverride All`). `scripts\verify.ps1` sprawdza to samo.
+- `scripts\install.ps1`: domyślnie instaluje do htdocs, przenosi bazę, `config.json` i kopie z `C:\SMS-Awarie` (stary katalog zostaje nienaruszony), komentuje stare wpisy `Include` z 3.x i 4.0.0, wyłącza zadania wskazujące starą lokalizację.
+- `install-watchdog-task.ps1` i `install-backup-task.ps1`: parametry `-Root` i `-Replace`. Watchdog domyślnie pilnuje `C:\xampp\htdocs\sms-awarie\receiver.php`.
+- Usunięty `apache-sms-awarie.conf`.
+- W repozytorium i paczce aplikacja leży w `htdocs/sms-awarie/` (zamiast `app/`) – ten katalog można skopiować wprost do `C:\xampp\htdocs\`.
+
 ## 4.0.0 – 2026-11-23 (major)
 - Panel WWW przepisany na czysty PHP + HTML + CSS + vanilla JS, serwowany przez Apache z XAMPP pod adresem `/sms-awarie`. Usunięte: Next.js, React, Node.js, npm, zadanie `SMS-Awarie-v3-Web`, reverse proxy na porcie 8090 i `api.php`.
 - Nowy układ: wszystko w `C:\SMS-Awarie` (`config.php` z wersją, `public/` jako jedyny katalog widoczny przez Apache, `views/`, `web/`, `cli/`). Ścieżki względne zamiast `C:/SMS-Awarie` wpisanego w kodzie.

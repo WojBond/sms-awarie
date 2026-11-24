@@ -100,6 +100,6 @@ function heartbeat(): array {
 }
 
 function asset(string $path): string {
-    $file = APP_ROOT.'/public/'.$path;
+    $file = APP_ROOT.'/'.$path;
     return h($path.'?v='.(is_file($file) ? filemtime($file) : 0));
 }
