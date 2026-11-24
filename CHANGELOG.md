@@ -1,5 +1,12 @@
 # Changelog SMS-Awarie
 
+## 4.1.1 – 2026-11-24 (patch)
+- XAMPP nie musi być na dysku `C:`. `install.ps1`, `install-watchdog-task.ps1`, `install-backup-task.ps1` i `verify.ps1` same znajdują XAMPP (rejestr, usługa Apache, `X:\xampp` na każdym dysku) albo przyjmują `-Xampp D:\xampp`. Wspólna funkcja w `scripts\_xampp.ps1`.
+- `install.ps1` obsługuje tylko świeżą instalację i aktualizację w htdocs. Usunięte przenoszenie danych z `C:\SMS-Awarie`, wyłączanie starych zadań i komentowanie wpisów w `httpd.conf`.
+- Kopie przed aktualizacją domyślnie w `<dysk XAMPP>:\SMS-Awarie-Backups` (`-BackupRoot`).
+- `watchdog.ps1` ustala `php.exe` względem folderu XAMPP (parametr `-Php` nadal działa); zadanie Watchdoga przekazuje `-Root` i `-Php`.
+- Usunięty `scripts\preflight.ps1`.
+
 ## 4.1.0 – 2026-11-24 (minor)
 - Aplikacja instalowana w standardowym folderze stron XAMPP: `C:\xampp\htdocs\sms-awarie` (adres bez zmian: `http://serwer/sms-awarie/`). Nie trzeba już dopisywać `Alias`/`Include` w `httpd.conf`.
 - `index.php` i `assets/` przeniesione z `public/` do katalogu głównego aplikacji. Główny `.htaccess` blokuje dostęp z przeglądarki do wszystkiego poza `index.php` i `assets/`, a `data`, `logs`, `cli`, `views`, `web` mają własne `Require all denied`.

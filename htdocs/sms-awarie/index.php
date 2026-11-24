@@ -1,5 +1,5 @@
 <?php
-// SMS-Awarie - panel WWW (router). Katalog aplikacji: C:\xampp\htdocs\sms-awarie, adres http://serwer/sms-awarie/
+// SMS-Awarie - panel WWW (router). Katalog aplikacji: <XAMPP>\htdocs\sms-awarie, adres http://serwer/sms-awarie/
 ini_set('display_errors', '0');
 require __DIR__.'/common.php';
 require __DIR__.'/groups.php';
@@ -49,5 +49,5 @@ try {
     if (isset($p) && $p->inTransaction()) $p->rollBack();
     error_log('SMS-Awarie: '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine());
     http_response_code(500);
-    echo '<!doctype html><meta charset="utf-8"><title>Błąd</title><p style="font-family:sans-serif;padding:2rem">Operacja nie powiodła się. Szczegóły w logu Apache (C:\xampp\apache\logs\error.log). <a href="?">Wróć</a></p>';
+    echo '<!doctype html><meta charset="utf-8"><title>Błąd</title><p style="font-family:sans-serif;padding:2rem">Operacja nie powiodła się. Szczegóły w logu Apache (xampp\apache\logs\error.log). <a href="?">Wróć</a></p>';
 }

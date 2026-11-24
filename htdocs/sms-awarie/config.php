@@ -1,7 +1,12 @@
 <?php
 // SMS-Awarie - wersja, changelog, strefa czasowa i sciezki. Jedno zrodlo prawdy dla numeru wersji.
-define('APP_VERSION', '4.1.0');
+define('APP_VERSION', '4.1.1');
 const APP_CHANGELOG = [
+    '4.1.1' => [
+        'Instalator i zadania same znajduja XAMPP na dowolnym dysku (rejestr, usluga Apache, X:\\xampp) albo przyjmuja parametr -Xampp D:\\xampp.',
+        'Instalator tylko dla swiezej instalacji i aktualizacji w htdocs - bez przenoszenia danych z C:\\SMS-Awarie i bez zmian w httpd.conf.',
+        'Watchdog sam ustala php.exe wzgledem folderu XAMPP; usuniety preflight.ps1.',
+    ],
     '4.1.0' => [
         'Instalacja w standardowym folderze XAMPP: C:\\xampp\\htdocs\\sms-awarie (bez Alias w httpd.conf).',
         'Ochrona plikow przez .htaccess: z przegladarki dostepne tylko index.php i assets; ostrzezenie na Dashboardzie, gdy katalog data jest odsloniety.',

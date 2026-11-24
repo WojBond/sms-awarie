@@ -1,7 +1,7 @@
 # Procedura odzyskiwania SMS-Awarie po awarii
 
 ## 1. Klasyfikacja problemu
-- **Panel nie działa, dane są poprawne:** sprawdź `C:\xampp\apache\logs\error.log`; w razie potrzeby przywróć pliki programu z `C:\SMS-Awarie-Backups\pre-...\app`; zachowaj aktualną SQLite.
+- **Panel nie działa, dane są poprawne:** sprawdź `<XAMPP>\apache\logs\error.log`; w razie potrzeby przywróć pliki programu z `<dysk XAMPP>:\SMS-Awarie-Backups\pre-...\app`; zachowaj aktualną SQLite.
 - **Receiver zawieszony:** sprawdź `watchdog-state.json`, `heartbeat.json`, proces PID, `watchdog-events.jsonl`, limity restartów i `watchdog.pause`. Nie uruchamiaj drugiego odbiornika ręcznie, jeśli pierwszy działa.
 - **Niepewna wysyłka SMS:** nie zmieniaj automatycznie statusów `W_TRAKCIE` / `NIEPEWNY`; porównaj z historią modemu i dokumentacją operacyjną. `PRZYJETY` nie oznacza doręczenia.
 - **Uszkodzona baza:** najpierw zabezpiecz oryginał wraz z WAL/SHM, następnie wykonaj diagnostykę i odzyskuj na kopii.
@@ -10,8 +10,8 @@
 1. Utwórz `<katalog aplikacji>\data\watchdog.pause`, wyłącz nowe zadanie Harmonogramu i inne autostarty.
 2. Zweryfikuj pełną ścieżkę i PID `receiver.php`. Poczekaj na koniec przetwarzania; zatrzymaj proces dopiero w oknie serwisowym.
 3. Zabezpiecz aktualną bazę, konfigurację, heartbeat, logi i kopię obecnego kodu (materiał do analizy).
-4. Przywróć poprzednie pliki programu z `C:\SMS-Awarie-Backups\pre-...\app` (bez katalogu `data`) oraz `httpd.conf` z tej samej kopii. Nie podmieniaj `awarie.sqlite`.
-5. Zrestartuj Apache (przy powrocie do 3.x włącz zadanie `SMS-Awarie-v3-Web`); usuń `watchdog.pause` dopiero po zakończeniu prac.
+4. Przywróć poprzednie pliki programu z `<dysk XAMPP>:\SMS-Awarie-Backups\pre-...\app` (bez katalogu `data`). Nie podmieniaj `awarie.sqlite`.
+5. Zrestartuj Apache; usuń `watchdog.pause` dopiero po zakończeniu prac.
 6. Sprawdź autoryzację, zgłoszenia, heartbeat i statusy `outbox`.
 
 ## 3. Przywracanie SQLite — tylko po potwierdzonej awarii danych
@@ -22,13 +22,14 @@
 5. Włącz aplikację i sprawdź `PRAGMA integrity_check`, liczbę `sms`, `tickets`, `outbox` oraz pojedynczy proces odbiornika. Odtwórz brakujące zgłoszenia tylko po porównaniu z rzeczywistą historią, bez automatycznego ponawiania wysyłek.
 
 ## 4. Komendy diagnostyczne
+Przykład dla XAMPP w `D:\xampp` – podstaw własną ścieżkę.
 ```powershell
 Get-ScheduledTask | Where-Object TaskName -like '*SMS*'
 Get-CimInstance Win32_Process -Filter "Name='php.exe'" | Where-Object CommandLine -like '*receiver.php*' | Select-Object ProcessId,CommandLine
-Get-Content 'C:\xampp\htdocs\sms-awarie\data\watchdog-state.json' -Raw
-Get-Content 'C:\xampp\htdocs\sms-awarie\data\heartbeat.json' -Raw
-Get-Content 'C:\xampp\htdocs\sms-awarie\logs\watchdog-events.jsonl' -Tail 50
-& 'C:\xampp\php\php.exe' -r '$db=new PDO("sqlite:C:/xampp/htdocs/sms-awarie/data/awarie.sqlite"); echo $db->query("PRAGMA integrity_check")->fetchColumn();'
+Get-Content 'D:\xampp\htdocs\sms-awarie\data\watchdog-state.json' -Raw
+Get-Content 'D:\xampp\htdocs\sms-awarie\data\heartbeat.json' -Raw
+Get-Content 'D:\xampp\htdocs\sms-awarie\logs\watchdog-events.jsonl' -Tail 50
+& 'D:\xampp\php\php.exe' -r '$db=new PDO("sqlite:D:/xampp/htdocs/sms-awarie/data/awarie.sqlite"); echo $db->query("PRAGMA integrity_check")->fetchColumn();'
 ```
 
 ## 5. Postępowanie przy braku możliwości odzyskania

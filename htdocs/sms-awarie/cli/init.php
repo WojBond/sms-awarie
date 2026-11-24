@@ -1,11 +1,11 @@
 <?php
 // SMS-Awarie - inicjalizacja / migracja schematu bazy. Uruchamiane przez scripts\install.ps1.
-// Uzycie: C:\xampp\php\php.exe C:\xampp\htdocs\sms-awarie\cli\init.php
+// Uzycie: <XAMPP>\php\php.exe <XAMPP>\htdocs\sms-awarie\cli\init.php
 if (PHP_SAPI !== 'cli') exit(1);
 require __DIR__.'/../common.php';
 require __DIR__.'/../groups.php';
 try {
-    foreach (['pdo_sqlite', 'curl', 'SimpleXML'] as $ext) if (!extension_loaded($ext)) throw new RuntimeException("Brak rozszerzenia PHP: $ext (wlacz w C:\\xampp\\php\\php.ini)");
+    foreach (['pdo_sqlite', 'curl', 'SimpleXML'] as $ext) if (!extension_loaded($ext)) throw new RuntimeException("Brak rozszerzenia PHP: $ext (wlacz w xampp\\php\\php.ini)");
     foreach ([DATA_DIR, LOG_DIR, DATA_DIR.'/backups'] as $d) if (!is_dir($d) && !mkdir($d, 0700, true)) throw new RuntimeException("Nie mozna utworzyc $d");
     if (!is_file(DATA_DIR.'/config.json')) {
         saveconfig(['modem' => 'http://192.168.8.1', 'modempass' => 'CHANGE_ME', 'ack' => false, 'own_phone' => '', 'ack_template' => '', 'delete_after_import' => true, 'send_per_cycle' => 5]);

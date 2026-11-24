@@ -1,6 +1,6 @@
 <?php
 // SMS-Awarie - awaryjne ustawienie hasla (np. gdy administrator zapomnial hasla).
-// Uzycie: C:\xampp\php\php.exe C:\xampp\htdocs\sms-awarie\cli\reset-password.php LOGIN
+// Uzycie: <XAMPP>\php\php.exe <XAMPP>\htdocs\sms-awarie\cli\reset-password.php LOGIN
 if (PHP_SAPI !== 'cli') exit(1);
 require __DIR__.'/../common.php';
 require __DIR__.'/../groups.php';
