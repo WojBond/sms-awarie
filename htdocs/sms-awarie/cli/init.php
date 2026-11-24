@@ -1,6 +1,6 @@
 <?php
 // SMS-Awarie - inicjalizacja / migracja schematu bazy. Uruchamiane przez scripts\install.ps1.
-// Uzycie: C:\xampp\php\php.exe C:\SMS-Awarie\cli\init.php
+// Uzycie: C:\xampp\php\php.exe C:\xampp\htdocs\sms-awarie\cli\init.php
 if (PHP_SAPI !== 'cli') exit(1);
 require __DIR__.'/../common.php';
 require __DIR__.'/../groups.php';

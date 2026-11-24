@@ -64,5 +64,6 @@ ob_start(); ?>
 $live = ob_get_clean();
 if (!empty($_GET['partial'])) { header('Cache-Control: no-store'); echo $live; exit; }
 layout_start($title, $u, $page);
+if (is_admin($u)) echo '<p id="exposure" class="flash flash-err" data-check="data/config.json" hidden>Katalog data jest dostępny z przeglądarki (baza i hasło modemu)! W httpd.conf ustaw AllowOverride All dla htdocs i zrestartuj Apache.</p>';
 echo '<div id="live" data-refresh="'.h(url('dashboard', ['partial' => 1])).'">'.$live.'</div>';
 layout_end();

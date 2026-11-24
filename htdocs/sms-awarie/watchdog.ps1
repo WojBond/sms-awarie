@@ -1,5 +1,5 @@
 ﻿# SMS-Awarie - Watchdog v3; Windows PowerShell 5.1
-param([string]$Root='C:\SMS-Awarie',[string]$Php='C:\xampp\php\php.exe',[int]$StaleSeconds=180,[int]$CooldownSeconds=300,[int]$MaxRestartsPerHour=3,[int]$GraceSeconds=90,[int]$StopWaitSeconds=20)
+param([string]$Root='C:\xampp\htdocs\sms-awarie',[string]$Php='C:\xampp\php\php.exe',[int]$StaleSeconds=180,[int]$CooldownSeconds=300,[int]$MaxRestartsPerHour=3,[int]$GraceSeconds=90,[int]$StopWaitSeconds=20)
 $ErrorActionPreference='Stop'
 $data=Join-Path $Root 'data'; $logs=Join-Path $Root 'logs'; $receiver=Join-Path $Root 'receiver.php'
 New-Item -ItemType Directory -Force -Path $data,$logs | Out-Null

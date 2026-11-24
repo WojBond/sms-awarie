@@ -19,6 +19,14 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 10000);
   }
 
+  // Kontrola ochrony katalogu data (wymaga AllowOverride All w Apache).
+  var ex = document.getElementById('exposure');
+  if (ex && ex.dataset.check) {
+    fetch(ex.dataset.check, { method: 'HEAD', cache: 'no-store' })
+      .then(function (r) { if (r.ok) ex.hidden = false; })
+      .catch(function () {});
+  }
+
   // Menu: na szerokim ekranie zawsze rozwiniete, na telefonie / Zebrze rozwijane przyciskiem.
   var menu = document.querySelector('details.menu');
   var wide = window.matchMedia('(min-width: 1000px)');

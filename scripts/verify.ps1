@@ -1,5 +1,5 @@
 ﻿# SMS-Awarie 4.x - kontrola instalacji (tylko odczyt).
-param([string]$Root='C:\SMS-Awarie',[string]$Xampp='C:\xampp')
+param([string]$Root='C:\xampp\htdocs\sms-awarie',[string]$Xampp='C:\xampp')
 $ErrorActionPreference='Continue'
 $php=Join-Path $Xampp 'php\php.exe'
 Write-Host '== PHP lint'
@@ -12,3 +12,8 @@ Write-Host '== Odbiornik'; Get-CimInstance Win32_Process | Where-Object {$_.Comm
 Write-Host '== Heartbeat'; $hb=Join-Path $Root 'data\heartbeat.json'; if(Test-Path $hb){Get-Content $hb -Raw}else{Write-Host 'brak'}
 Write-Host '== SQLite integrity'; & $php -r "`$p=new PDO('sqlite:file:$($Root -replace '\\','/')/data/awarie.sqlite?mode=ro'); echo `$p->query('PRAGMA integrity_check')->fetchColumn(),PHP_EOL;"
 Write-Host '== Panel'; try{$r=Invoke-WebRequest -UseBasicParsing -Uri 'http://localhost/sms-awarie/' -TimeoutSec 10; Write-Host "HTTP $($r.StatusCode) - panel odpowiada"}catch{Write-Host "Panel nie odpowiada: $($_.Exception.Message)" -ForegroundColor Red}
+Write-Host '== Ochrona plikow (oczekiwane 403/404)'
+foreach($u in @('data/config.json','data/awarie.sqlite','common.php','logs/receiver-stdout.log')){
+  try{$r=Invoke-WebRequest -UseBasicParsing -Uri "http://localhost/sms-awarie/$u" -TimeoutSec 10; Write-Host "$u : HTTP $($r.StatusCode) - DOSTEPNY Z SIECI! Sprawdz AllowOverride All dla htdocs w httpd.conf" -ForegroundColor Red}
+  catch{$code=$_.Exception.Response.StatusCode.value__; Write-Host "$u : HTTP $code - zablokowany"}
+}
