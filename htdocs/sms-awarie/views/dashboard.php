@@ -26,6 +26,7 @@ ob_start(); ?>
   <section class="card">
     <h2>Odbiornik SMS</h2>
     <p>Stan: <?= badge($hb['state']) ?> <small class="muted">(na podstawie heartbeat, nie aktywny test modemu)</small></p>
+    <?php if (($hb['raw']['version'] ?? APP_VERSION) !== APP_VERSION): ?><p class="flash flash-err">Odbiornik działa w wersji <?= h((string)$hb['raw']['version']) ?>, a panel w <?= h(APP_VERSION) ?>. Skopiuj wszystkie pliki nowej wersji (instalator <code>scripts\install.ps1</code>) i uruchom ponownie odbiornik.</p><?php endif; ?>
     <?php if (!empty($hb['raw']['lastError'])): ?><p class="flash flash-err">Ostatni błąd: <?= h($hb['raw']['lastError']) ?></p><?php endif; ?>
     <?php if (is_array($modem) && (int)($modem['max'] ?? 0) > 0): $full = (int)$modem['inbox'] >= 0.8 * (int)$modem['max']; ?>
       <p>Pamięć SMS modemu: <strong class="<?= $full ? 'txt-red' : '' ?>"><?= (int)$modem['inbox'] ?> / <?= (int)$modem['max'] ?></strong></p>

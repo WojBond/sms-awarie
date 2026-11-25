@@ -1,5 +1,11 @@
 # Changelog SMS-Awarie
 
+## 4.3.1 – 2026-11-25 (patch)
+- **Naprawiony błąd krytyczny odbiornika** `db(): Argument #1 ($s) must be of type ?array, string given` (receiver.php:118). Występował, gdy po aktualizacji do 4.2+ został stary `receiver.php` z 4.0–4.1 (`db('sqlite', $cfg)`), a odbiornik był uruchamiany ponownie, np. przez Watchdog po restarcie routera. `db()` przyjmuje teraz także dawne wywołanie; ustawienia bazy i tak pochodzą z `config.json`.
+- **Ponowne połączenie z modemem Huawei po restarcie routera:** brak odpowiedzi modemu, błąd HTTP i wygasła sesja (API 125002, 125003, 100003) to stan `MODEM_OFFLINE` – odbiornik zamyka sesję, ponawia logowanie co 15 s, potem co 30 i 60 s, i zapisuje w logu `[MODEM] Polaczenie przywrocone po N s`. Limit czasu nawiązania połączenia 5 s.
+- Watchdog nie zabija odbiornika, gdy niedostępny jest tylko modem (restartuje przy `ERROR` lub nieaktualnym heartbeat), więc dłuższa awaria routera nie wyczerpuje limitu 3 restartów na godzinę.
+- Panel: stan „Brak połączenia z modemem” (żółty) zamiast „Błąd”; Dashboard i Ustawienia › Modem ostrzegają, gdy wersja odbiornika z heartbeat różni się od wersji panelu (niepełna aktualizacja plików).
+
 ## 4.3.0 – 2026-11-24 (minor)
 - **Odświeżony wygląd panelu** w tym samym jasnym, niebieskim stylu: ikony liniowe w menu bocznym (inline SVG, bez bibliotek i CDN), znak aplikacji, wyróżnienie aktywnej pozycji paskiem, karty z delikatnym cieniem, nagłówki tabel i podświetlanie wierszy, plakietki statusów z kropką.
 - **Telefon i Zebra:** tabele list wyświetlane jako karty z etykietami kolumn (`app.js` dodaje `data-label`, bez JavaScriptu zostaje przewijana tabela). Naprawione przesuwanie całej strony w poziomie na Dashboardzie i w Bazie danych (długie ścieżki).

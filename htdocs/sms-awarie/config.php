@@ -1,7 +1,13 @@
 <?php
 // SMS-Awarie - wersja, changelog, strefa czasowa i sciezki. Jedno zrodlo prawdy dla numeru wersji.
-define('APP_VERSION', '4.3.0');
+define('APP_VERSION', '4.3.1');
 const APP_CHANGELOG = [
+    '4.3.1' => [
+        'Naprawiony blad krytyczny odbiornika db(): Argument #1 must be of type ?array po aktualizacji z 4.1 (stary receiver.php z nowym db.php) - db() przyjmuje tez dawne wywolanie db(\'sqlite\', $cfg).',
+        'Odbiornik sam wznawia polaczenie z modemem Huawei po jego restarcie: ponawia co 15-60 s, loguje przywrocenie polaczenia, a w panelu pokazuje stan "Brak polaczenia z modemem" zamiast bledu.',
+        'Watchdog nie restartuje juz odbiornika, gdy niedostepny jest tylko modem (limit 3 restartow na godzine nie jest zuzywany przy dluzszej awarii routera).',
+        'Dashboard i Ustawienia > Modem ostrzegaja, gdy odbiornik dziala w innej wersji niz panel.',
+    ],
     '4.3.0' => [
         'Odswiezony wyglad panelu: ikony w menu bocznym, znak aplikacji, karty z cieniem, kolorowe paski statusow na licznikach.',
         'Na telefonie i Zebrze listy (Dashboard, SMS, wysylki, grupy, dziennik) jako karty zamiast tabel przewijanych w bok; strona nie przesuwa sie juz w poziomie.',
