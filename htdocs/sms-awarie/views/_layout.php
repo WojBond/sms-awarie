@@ -14,7 +14,7 @@ function nav_items(?array $u): array {
         ['outbox', 'SMS wychodzące', [], ''],
         [null, 'Grupy zgłoszeń', [], '', $groups],
         ['users', 'Użytkownicy', [], 'admin'],
-        [null, 'Ustawienia', [], 'admin', [['settings', 'Autoodpowiedzi', [], ''], ['modem', 'Modem', [], ''], ['database', 'Baza danych', [], '']]],
+        [null, 'Ustawienia', [], 'admin', [['settings', 'Autoodpowiedzi', [], ''], ['modem', 'Modem', [], ''], ['database', 'Baza danych', [], ''], ['services', 'Usługi', [], '']]],
         ['logs', 'Dziennik zdarzeń', [], 'admin'],
     ];
 }

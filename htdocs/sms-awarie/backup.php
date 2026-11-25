@@ -6,6 +6,8 @@
 require __DIR__.'/common.php';
 if(PHP_SAPI!=='cli')exit(1);
 $keepDays=max(1,(int)($argv[1]??30));
+// 4.4.0: kopia wstrzymana w panelu (Ustawienia > Usługi) - zadanie konczy sie bez bledu.
+if(is_file(__DIR__.'/data/backup.pause')){echo date('c')." BACKUP POMINIETY: wstrzymany w panelu (data\\backup.pause)\n";exit(0);}
 try{
     $s=db_settings();
     if($s['driver']==='sqlsrv'){

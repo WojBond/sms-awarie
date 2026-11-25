@@ -21,6 +21,7 @@ const PAGES = [
     'settings'  => ['settings', 'Autoodpowiedzi', 'admin'],
     'modem'     => ['modem', 'Modem', 'admin'],
     'database'  => ['database', 'Baza danych', 'admin'],
+    'services'  => ['services', 'Usługi', 'admin'],
     'logs'      => ['logs', 'Dziennik zdarzeń', 'admin'],
 ];
 

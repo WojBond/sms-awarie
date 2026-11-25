@@ -5,6 +5,7 @@ require __DIR__.'/groups.php';
 if(PHP_SAPI!=='cli')exit;
 if (!is_dir(__DIR__.'/data')) throw new RuntimeException('Brak katalogu data');
 $lock=fopen(__DIR__.'/data/receiver.lock','c');if(!$lock||!flock($lock,LOCK_EX|LOCK_NB))exit('Odbiornik już działa.');
+if(is_file(__DIR__.'/data/receiver.stop'))exit('Odbiornik zatrzymany w panelu (Ustawienia > Usługi). Uruchom go tam albo usuń data\receiver.stop.'.PHP_EOL);
 
 function request($path,$body=null){global $ch,$cfg,$token;curl_setopt_array($ch,[CURLOPT_URL=>rtrim($cfg['modem'],'/').$path,CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>5,CURLOPT_TIMEOUT=>10,CURLOPT_COOKIEFILE=>'',CURLOPT_HTTPHEADER=>['X-Requested-With: XMLHttpRequest','Origin: '.$cfg['modem'],'Referer: '.$cfg['modem'].'/html/home.html','__RequestVerificationToken: '.$token,'Content-Type: application/x-www-form-urlencoded; charset=UTF-8']]);if($body===null){curl_setopt($ch,CURLOPT_HTTPGET,true);}else{curl_setopt($ch,CURLOPT_POST,true);curl_setopt($ch,CURLOPT_POSTFIELDS,$body);} $r=curl_exec($ch);if($r===false)throw new ModemOffline('Brak połączenia z modemem: '.curl_error($ch));$code=curl_getinfo($ch,CURLINFO_HTTP_CODE);if($code!==200)throw new ModemOffline('Błąd HTTP modemu: '.$code);if($path==='/html/home.html')return;$x=simplexml_load_string($r,'SimpleXMLElement',LIBXML_NONET);if($x===false||$x->getName()==='error'){$c=$x?(string)$x->code:'XML';if(in_array($c,['125002','125003','100003'],true))throw new ModemOffline('Sesja modemu wygasla (API '.$c.') - ponowne logowanie');throw new Exception('API: '.$c);}return $x;}
 function token(){global $token;$token=(string)request('/api/webserver/token')->token;if(!$token)throw new Exception('Brak tokenu');}
@@ -61,6 +62,26 @@ function deleteSms($index){
 function readModemStorage(){
     try{$x=request('/api/sms/sms-count');$GLOBALS['modemStorage']=['inbox'=>(int)$x->LocalInbox,'max'=>(int)$x->LocalMax,'simInbox'=>(int)$x->SimInbox,'simMax'=>(int)$x->SimMax];}
     catch(Throwable $e){/* informacyjne - brak danych nie jest bledem */}
+}
+
+// 4.4.0: zatrzymanie z panelu (Ustawienia > Usługi) - plik data\receiver.stop. Odbiornik konczy prace
+// tylko miedzy krokami (nigdy w trakcie zapisu SMS lub wysylki), zapisuje heartbeat STOPPED i wychodzi.
+const RECEIVER_STOP_FLAG = DATA_DIR.'/receiver.stop';
+function receiverStopIfRequested(): void {
+    clearstatcache(true, RECEIVER_STOP_FLAG);
+    if (!is_file(RECEIVER_STOP_FLAG)) return;
+    $GLOBALS['receiverPhase'] = 'stopped'; $GLOBALS['receiverLastError'] = '';
+    try { receiverHeartbeat('STOPPED'); } catch (Throwable $ignored) {}
+    echo date('c').' [STOP] Odbiornik zatrzymany z panelu (data\receiver.stop)'.PHP_EOL;
+    exit(0);
+}
+// Przerwa w petli przerywana zadaniem zatrzymania; co 15 s odswieza heartbeat (gdy podano stan).
+function receiverNap(int $seconds, ?string $state = null): void {
+    for ($i = 1; $i <= $seconds; $i++) {
+        sleep(1);
+        receiverStopIfRequested();
+        if ($state !== null && $i % 15 === 0) { try { receiverHeartbeat($state); } catch (Throwable $ignored) {} }
+    }
 }
 
 function receiverHeartbeat($state) {
@@ -121,6 +142,7 @@ $dbSig=db_signature(db_settings($cfg));
 $p=null; // polaczenie z baza nawiazuje petla (takze ponownie po bledzie)
 $ch=null;$token='';$modemDownSince=0;$modemRetry=15;
 while(true){
+    receiverStopIfRequested();
     try{
         // 4.2.0: przelaczanie bazy w panelu wstrzymuje odbiornik (data\maintenance.flag), a po zmianie
         // ustawien "db" w config.json odbiornik laczy sie z nowa baza bez restartu.
@@ -162,7 +184,7 @@ while(true){
         $receiverPhase='sending';receiverHeartbeat('RUNNING');
         sendQueued($p,$sendPerCycle);
         $receiverPhase='idle';receiverHeartbeat('RUNNING');
-        sleep(15);
+        receiverNap(15);
     }catch(Throwable $e){
         $offline=$e instanceof ModemOffline;
         $receiverPhase=$offline?'modem_offline':'error';$receiverLastError=substr($e->getMessage(),0,240);
@@ -173,12 +195,12 @@ while(true){
         if($offline){
             if(!$modemDownSince)$modemDownSince=time();
             // Ponawianie co 15 s, potem coraz rzadziej (do 60 s); heartbeat odswiezany w trakcie czekania.
-            for($w=0;$w<$modemRetry;$w+=15){sleep(15);try{receiverHeartbeat('MODEM_OFFLINE');}catch(Throwable $ignored){}}
+            receiverNap($modemRetry,'MODEM_OFFLINE');
             $modemRetry=min(60,$modemRetry*2);
             continue;
         }
         if($e instanceof PDOException)$p=null; // polaczenie z baza (np. MS SQL) zostanie nawiazane ponownie
         // Po odrzuconym logowaniu dluzsza przerwa, zeby nie zablokowac konta admin modemu.
-        sleep($e instanceof LoginRejected?300:60);
+        receiverNap($e instanceof LoginRejected?300:60);
     }
 }

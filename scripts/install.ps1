@@ -38,7 +38,7 @@ $existing=Test-Path (Join-Path $Root 'receiver.php')
 if($existing){
   Write-Host "Aktualizacja istniejacej instalacji (dane w data\ zostaja)."
   $receivers=@(Get-CimInstance Win32_Process -Filter "Name='php.exe'" | Where-Object {$_.CommandLine -like "*$Root\receiver.php*"})
-  if($receivers.Count){throw "Dziala odbiornik (PID $($receivers.ProcessId -join ',')). Najpierw: New-Item '$Root\data\watchdog.pause' -ItemType File; potem Stop-Process -Id <PID>. Uruchom instalator ponownie."}
+  if($receivers.Count){throw "Dziala odbiornik (PID $($receivers.ProcessId -join ',')). Najpierw w panelu: Ustawienia > Uslugi > Zatrzymaj wszystko (wersje starsze niz 4.4: New-Item '$Root\data\watchdog.pause' -ItemType File; potem Stop-Process -Id <PID>). Uruchom instalator ponownie."}
 }elseif(Test-Path $Root){
   Warn "Katalog $Root istnieje, ale nie zawiera aplikacji - pliki zostana do niego dograne."
 }else{

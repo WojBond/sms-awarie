@@ -42,14 +42,15 @@ Skrypty (`install.ps1`, `install-watchdog-task.ps1`, `install-backup-task.ps1`, 
 
 ## 2. Aktualizacja (4.1 → kolejne wersje)
 
-1. Wstrzymaj Watchdoga i zatrzymaj odbiornik:
+1. W panelu otwórz **Ustawienia › Usługi** i kliknij **Zatrzymaj wszystko** (od wersji 4.4). Odbiornik kończy bieżący krok i się zatrzymuje, a Watchdog i kopia zapasowa są wstrzymane – poczekaj na komunikat „Wszystkie usługi zatrzymane”.
+   Aktualizując z wersji starszej niż 4.4, zrób to ręcznie:
    ```powershell
    New-Item <XAMPP>\htdocs\sms-awarie\data\watchdog.pause -ItemType File
    Get-CimInstance Win32_Process -Filter "Name='php.exe'" | Where-Object CommandLine -like '*receiver.php*' | Select ProcessId
    Stop-Process -Id <PID>
    ```
 2. Uruchom `.\scripts\install.ps1 -Apply` (z `-Xampp`, jeśli trzeba). Instalator robi kopię plików i bazy do `<dysk XAMPP>:\SMS-Awarie-Backups\pre-<wersja>-<data>` (inne miejsce: `-BackupRoot`), podmienia program bez ruszania `data` i `logs`, a następnie migruje bazę.
-3. Usuń `watchdog.pause`.
+3. W panelu kliknij **Ustawienia › Usługi › Wznów wszystko** (przy aktualizacji ze starszej wersji: usuń `data\watchdog.pause`). Watchdog uruchomi odbiornik w ciągu kilku minut.
 
 Jeśli XAMPP przeniesiesz na inny dysk, zarejestruj zadania ponownie z `-Replace`.
 
@@ -61,7 +62,16 @@ Ustawienia zmieniasz w panelu (Ustawienia › Modem):
 - `delete_after_import` (domyślnie `true`) usuwa odebrane SMS z modemu po zapisie w bazie;
 - `send_per_cycle` (domyślnie 5) określa, ile SMS odbiornik wysyła w jednym cyklu.
 
-Po zmianie ustawień modemu zrestartuj odbiornik: zatrzymaj proces, a Watchdog uruchomi go ponownie.
+Po zmianie ustawień modemu zrestartuj odbiornik: **Ustawienia › Usługi › Odbiornik SMS** – Zatrzymaj, a potem Uruchom.
+
+## 3a. Usługi (Ustawienia › Usługi)
+
+- **Odbiornik SMS – Zatrzymaj/Uruchom:** plik `data\receiver.stop`. Odbiornik kończy pracę między krokami (nie w trakcie zapisu SMS ani wysyłki), a Watchdog go nie uruchamia, dopóki plik istnieje.
+- **Watchdog – Wstrzymaj/Wznów:** plik `data\watchdog.pause`. Watchdog nic nie robi; działający odbiornik pracuje dalej, ale nikt go nie restartuje.
+- **Kopia zapasowa – Wstrzymaj/Wznów:** plik `data\backup.pause`. Zadanie backupu kończy się bez kopii (wpis „BACKUP POMINIETY”).
+- **Wyłącz/Włącz w Harmonogramie, Uruchom teraz:** zmienia same zadania `SMS-Awarie-*` w Harmonogramie zadań Windows. Wymaga, żeby Apache działał z uprawnieniami administratora (np. jako usługa na koncie Local System). Bez tego panel pokazuje polecenie, np. `Disable-ScheduledTask -TaskName 'SMS-Awarie-v3-Watchdog'`, do uruchomienia w PowerShell jako administrator.
+
+Flagi przetrwają aktualizację i restart serwera. Dashboard przypomina, gdy któraś usługa jest zatrzymana.
 
 ## 4. Zapomniane hasło administratora
 

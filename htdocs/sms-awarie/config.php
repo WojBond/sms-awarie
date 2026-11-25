@@ -1,7 +1,13 @@
 <?php
 // SMS-Awarie - wersja, changelog, strefa czasowa i sciezki. Jedno zrodlo prawdy dla numeru wersji.
-define('APP_VERSION', '4.3.1');
+define('APP_VERSION', '4.4.0');
 const APP_CHANGELOG = [
+    '4.4.0' => [
+        'Nowa strona Ustawienia > Uslugi: stan odbiornika, Watchdoga i kopii zapasowej z przyciskami Zatrzymaj/Uruchom i Wstrzymaj/Wznow.',
+        'Przycisk "Zatrzymaj wszystko" przed aktualizacja (odbiornik konczy biezacy krok i sie zatrzymuje, Watchdog i backup wstrzymane) oraz "Wznow wszystko".',
+        'Zadania SMS-Awarie w Harmonogramie zadan Windows: stan, ostatnie i nastepne uruchomienie, Wylacz/Wlacz i Uruchom teraz (gdy Apache ma uprawnienia administratora; inaczej panel podaje polecenie PowerShell).',
+        'Zatrzymany odbiornik nie jest uruchamiany przez Watchdoga; wstrzymany backup pomija kopie bez bledu.',
+    ],
     '4.3.1' => [
         'Naprawiony blad krytyczny odbiornika db(): Argument #1 must be of type ?array po aktualizacji z 4.1 (stary receiver.php z nowym db.php) - db() przyjmuje tez dawne wywolanie db(\'sqlite\', $cfg).',
         'Odbiornik sam wznawia polaczenie z modemem Huawei po jego restarcie: ponawia co 15-60 s, loguje przywrocenie polaczenia, a w panelu pokazuje stan "Brak polaczenia z modemem" zamiast bledu.',

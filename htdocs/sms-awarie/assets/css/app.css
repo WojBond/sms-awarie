@@ -92,6 +92,7 @@ input[readonly], textarea[readonly], select[disabled] { background: var(--grey-b
 .btn:hover { background: var(--accent-d); }
 .btn-o { color: var(--accent); background: #fff; }
 .btn-o:hover { background: var(--blue-bg); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
 form.inline { margin: 0; }
 .actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
 .actions form { margin: 0; }
