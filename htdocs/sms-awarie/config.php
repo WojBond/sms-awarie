@@ -1,7 +1,14 @@
 <?php
 // SMS-Awarie - wersja, changelog, strefa czasowa i sciezki. Jedno zrodlo prawdy dla numeru wersji.
-define('APP_VERSION', '4.5.1');
+define('APP_VERSION', '4.6.0');
 const APP_CHANGELOG = [
+    '4.6.0' => [
+        'Nowa strona Ustawienia > Poczta e-mail: konto SMTP do powiadomien (serwer, port, STARTTLS/SSL, login, haslo, nadawca), testowy e-mail z podgladem odpowiedzi serwera i lista ostatnich e-maili.',
+        'Uzytkownicy maja adres e-mail i numer telefonu. Nowa opcja konta bez logowania - tylko do powiadomien (np. mechanik, serwis zewnetrzny).',
+        'Grupy zgloszen: zamiast wpisywania numerow wybierasz uzytkownikow (Odbiorcy powiadomien) i zaznaczasz SMS i/lub e-mail. Powiadomienia ida na aktualny telefon i adres z konta.',
+        'Dotychczasowe dodatkowe numery grup zostaja i dalej dostaja SMS; przycisk "Zamien na konto" przenosi numer do nowego konta, a numer nalezacy juz do odbiorcy znika z listy sam (bez podwojnych SMS).',
+        'E-maile wysyla odbiornik po SMS-ach, z ponowieniami po 1, 5, 15 i 60 min. Tabela odbiorcow pokazuje, kto nie ma dostepu do grupy w panelu.',
+    ],
     '4.5.1' => [
         'Poprawiony wyglad sekcji Dostep do grup zgloszen w formularzu konta: wybor zakresu jako dwa kafelki z opisem, normalnej wielkosci przyciski wyboru.',
         'Przy "Wszystkie grupy" widac tylko poziom dostepu, przy "Tylko wybrane grupy" tylko tabele grup; uprawnienia dodatkowe w osobnej czesci.',

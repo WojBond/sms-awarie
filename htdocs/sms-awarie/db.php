@@ -116,19 +116,21 @@ function mssqlSchema(PDO $p): void {
 
 // Tabele w kolejnosci kluczy obcych (kopiowanie danych).
 const DB_TABLES = [
-    'web_users' => ['id', 'login', 'password_hash', 'role', 'active', 'groups_all', 'can_send', 'see_unassigned'],
+    'web_users' => ['id', 'login', 'password_hash', 'role', 'active', 'groups_all', 'can_send', 'see_unassigned', 'email', 'phone', 'login_enabled'],
     'web_audit' => ['created', 'actor', 'action', 'target'],
     'vehicles' => ['id', 'plate', 'active'],
     'incident_groups' => ['id', 'name', 'prefix', 'active', 'legacy_vehicle', 'notify_sender', 'sender_template', 'recipient_template'],
     'group_recipients' => ['id', 'group_id', 'phone', 'active'],
     'user_group_access' => ['user_id', 'group_id', 'level'],
+    'group_members' => ['group_id', 'user_id', 'notify_sms', 'notify_email'],
     'outbox' => ['id', 'phone', 'content', 'status', 'created', 'detail'],
     'sms' => ['id', 'modem_index', 'sender', 'content', 'received', 'status'],
     'tickets' => ['id', 'sms_id', 'plate', 'description', 'status', 'created', 'seq'],
     'ticket_groups' => ['ticket_id', 'group_id', 'object_code'],
     'notification_deliveries' => ['id', 'ticket_id', 'recipient', 'kind', 'outbox_id'],
+    'mail_outbox' => ['id', 'ticket_id', 'email', 'subject', 'body', 'status', 'created', 'sent', 'attempts', 'next_try', 'detail'],
 ];
-const DB_ORDER = ['web_users' => 'id', 'web_audit' => 'id', 'vehicles' => 'id', 'incident_groups' => 'id', 'group_recipients' => 'id', 'user_group_access' => 'user_id,group_id', 'outbox' => 'id', 'sms' => 'id', 'tickets' => 'id', 'ticket_groups' => 'ticket_id', 'notification_deliveries' => 'id'];
+const DB_ORDER = ['web_users' => 'id', 'web_audit' => 'id', 'vehicles' => 'id', 'incident_groups' => 'id', 'group_recipients' => 'id', 'user_group_access' => 'user_id,group_id', 'group_members' => 'group_id,user_id', 'outbox' => 'id', 'sms' => 'id', 'tickets' => 'id', 'ticket_groups' => 'ticket_id', 'notification_deliveries' => 'id', 'mail_outbox' => 'id'];
 
 // Liczba wierszy w tabelach aplikacji; null = tabela nie istnieje.
 function db_counts(PDO $p): array {

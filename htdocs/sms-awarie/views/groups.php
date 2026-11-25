@@ -13,8 +13,7 @@ $list = rows($p, "SELECT g.id,g.name,g.prefix,g.active,g.legacy_vehicle,COUNT(t.
     FROM incident_groups g LEFT JOIN ticket_groups tg ON tg.group_id=g.id LEFT JOIN tickets t ON t.id=tg.ticket_id".($gf !== '' ? " WHERE $gf" : '')."
     GROUP BY g.id,g.name,g.prefix,g.active,g.legacy_vehicle ORDER BY g.legacy_vehicle DESC, g.active DESC, g.name", $ga);
 $levels = group_levels($p, $u);
-$recipients = [];
-foreach (rows($p, 'SELECT group_id,COUNT(*) AS n FROM group_recipients WHERE active=1 GROUP BY group_id') as $r) $recipients[$r['group_id']] = (int)$r['n'];
+$recipients = group_recipient_counts($p);
 
 layout_start($title, $u, $page);
 ?>
@@ -33,7 +32,8 @@ layout_start($title, $u, $page);
 <?php if (is_admin($u)): ?>
 <details class="card item">
   <summary><strong>+ Nowa grupa</strong></summary>
-  <?php group_form(['id' => '', 'name' => '', 'prefix' => '', 'active' => 1, 'notify_sender' => 1, 'sender_template' => 'Przyjeto zgloszenie {number} dla {object}.', 'recipient_template' => 'Nowe zgloszenie {number}: {group} {object} {description}'], [], url('groups')); ?>
+  <?php group_form(['id' => '', 'name' => '', 'prefix' => '', 'active' => 1, 'notify_sender' => 1, 'sender_template' => 'Przyjeto zgloszenie {number} dla {object}.', 'recipient_template' => 'Nowe zgloszenie {number}: {group} {object} {description}'], url('groups')); ?>
+  <p class="muted">Odbiorców powiadomień (użytkowników) dodasz na stronie grupy po jej zapisaniu.</p>
 </details>
 <?php endif; ?>
 <?php layout_end();
