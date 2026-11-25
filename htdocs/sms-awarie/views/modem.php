@@ -36,6 +36,7 @@ layout_start($title, $u, $page);
   <h2>Stan</h2>
   <p>Odbiornik: <?= badge($hb['state']) ?><?php if (($hb['raw']['phase'] ?? '') === 'paused'): ?> <span class="badge b-amber">wstrzymany</span><?php endif; ?></p>
   <?php if (is_array($modem) && (int)($modem['max'] ?? 0) > 0): ?><p>Pamięć SMS modemu: <strong><?= (int)$modem['inbox'] ?> / <?= (int)$modem['max'] ?></strong></p><?php endif; ?>
+  <?php if (($hb['raw']['version'] ?? APP_VERSION) !== APP_VERSION): ?><p class="flash flash-err">Odbiornik działa w wersji <?= h((string)$hb['raw']['version']) ?>, a panel w <?= h(APP_VERSION) ?>. Skopiuj wszystkie pliki nowej wersji (instalator <code>scripts\install.ps1</code>) i uruchom ponownie odbiornik.</p><?php endif; ?>
   <?php if (!empty($hb['raw']['lastError'])): ?><p class="flash flash-err">Ostatni błąd: <?= h($hb['raw']['lastError']) ?></p><?php endif; ?>
   <p class="muted">Testowy SMS wyślesz w Ustawienia › Autoodpowiedzi.</p>
 </section>

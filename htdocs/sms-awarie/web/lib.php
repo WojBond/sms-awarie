@@ -6,7 +6,7 @@ const TICKET_STATUSES = ['NOWE' => 'Nowe', 'WERYFIKACJA' => 'Weryfikacja', 'W_RE
 // Czytelne nazwy pozostalych statusow (SMS, wysylki, odbiornik). W bazie zostaja kody.
 const STATUS_LABELS = TICKET_STATUSES + ['OCZEKUJE' => 'Oczekuje', 'W_TRAKCIE' => 'W trakcie', 'PRZYJETY' => 'Przyjęty przez modem', 'WYSLANO' => 'Wysłano',
     'NIEPEWNY' => 'Niepewny', 'ANULOWANY' => 'Anulowany', 'NIEPOPRAWNY' => 'Niepoprawny', 'BLAD' => 'Błąd', 'ERROR' => 'Błąd',
-    'OFFLINE' => 'Offline', 'RUNNING' => 'Działa', 'UNKNOWN' => 'Nieznany'];
+    'OFFLINE' => 'Offline', 'MODEM_OFFLINE' => 'Brak połączenia z modemem', 'RUNNING' => 'Działa', 'UNKNOWN' => 'Nieznany'];
 const PER_PAGE = 50;
 
 function h($v): string { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
@@ -63,7 +63,7 @@ function fmt_bytes(int $b): string {
 function badge(string $status): string {
     $cls = match ($status) {
         'NOWE', 'OCZEKUJE' => 'b-blue',
-        'WERYFIKACJA', 'W_TRAKCIE', 'NIEPEWNY' => 'b-amber',
+        'WERYFIKACJA', 'W_TRAKCIE', 'NIEPEWNY', 'MODEM_OFFLINE' => 'b-amber',
         'W_REALIZACJI' => 'b-violet',
         'ZAMKNIETE', 'PRZYJETY', 'WYSLANO', 'RUNNING' => 'b-green',
         'NIEPOPRAWNY', 'BLAD', 'ERROR', 'OFFLINE', 'ANULOWANY' => 'b-red',

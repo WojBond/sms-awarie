@@ -6,7 +6,7 @@ if(PHP_SAPI!=='cli')exit;
 if (!is_dir(__DIR__.'/data')) throw new RuntimeException('Brak katalogu data');
 $lock=fopen(__DIR__.'/data/receiver.lock','c');if(!$lock||!flock($lock,LOCK_EX|LOCK_NB))exit('Odbiornik już działa.');
 
-function request($path,$body=null){global $ch,$cfg,$token;curl_setopt_array($ch,[CURLOPT_URL=>rtrim($cfg['modem'],'/').$path,CURLOPT_RETURNTRANSFER=>true,CURLOPT_TIMEOUT=>10,CURLOPT_COOKIEFILE=>'',CURLOPT_HTTPHEADER=>['X-Requested-With: XMLHttpRequest','Origin: '.$cfg['modem'],'Referer: '.$cfg['modem'].'/html/home.html','__RequestVerificationToken: '.$token,'Content-Type: application/x-www-form-urlencoded; charset=UTF-8']]);if($body===null){curl_setopt($ch,CURLOPT_HTTPGET,true);}else{curl_setopt($ch,CURLOPT_POST,true);curl_setopt($ch,CURLOPT_POSTFIELDS,$body);} $r=curl_exec($ch);if($r===false||curl_getinfo($ch,CURLINFO_HTTP_CODE)!==200)throw new Exception('Błąd HTTP modemu');if($path==='/html/home.html')return;$x=simplexml_load_string($r,'SimpleXMLElement',LIBXML_NONET);if($x===false||$x->getName()==='error')throw new Exception('API: '.($x?(string)$x->code:'XML'));return $x;}
+function request($path,$body=null){global $ch,$cfg,$token;curl_setopt_array($ch,[CURLOPT_URL=>rtrim($cfg['modem'],'/').$path,CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>5,CURLOPT_TIMEOUT=>10,CURLOPT_COOKIEFILE=>'',CURLOPT_HTTPHEADER=>['X-Requested-With: XMLHttpRequest','Origin: '.$cfg['modem'],'Referer: '.$cfg['modem'].'/html/home.html','__RequestVerificationToken: '.$token,'Content-Type: application/x-www-form-urlencoded; charset=UTF-8']]);if($body===null){curl_setopt($ch,CURLOPT_HTTPGET,true);}else{curl_setopt($ch,CURLOPT_POST,true);curl_setopt($ch,CURLOPT_POSTFIELDS,$body);} $r=curl_exec($ch);if($r===false)throw new ModemOffline('Brak połączenia z modemem: '.curl_error($ch));$code=curl_getinfo($ch,CURLINFO_HTTP_CODE);if($code!==200)throw new ModemOffline('Błąd HTTP modemu: '.$code);if($path==='/html/home.html')return;$x=simplexml_load_string($r,'SimpleXMLElement',LIBXML_NONET);if($x===false||$x->getName()==='error'){$c=$x?(string)$x->code:'XML';if(in_array($c,['125002','125003','100003'],true))throw new ModemOffline('Sesja modemu wygasla (API '.$c.') - ponowne logowanie');throw new Exception('API: '.$c);}return $x;}
 function token(){global $token;$token=(string)request('/api/webserver/token')->token;if(!$token)throw new Exception('Brak tokenu');}
 
 function login(){
@@ -23,10 +23,12 @@ function login(){
     }else{
         $body='<?xml version="1.0" encoding="UTF-8"?><request><Username>admin</Username><Password>'.base64_encode($cfg['modempass']).'</Password></request>';
     }
-    try{$x=request('/api/user/login',$body);}catch(Throwable $e){throw new LoginRejected('Logowanie odrzucone: '.$e->getMessage());}
+    try{$x=request('/api/user/login',$body);}catch(ModemOffline $e){throw $e;}catch(Throwable $e){throw new LoginRejected('Logowanie odrzucone: '.$e->getMessage());}
     if((string)$x!=='OK')throw new LoginRejected('Logowanie odrzucone');
 }
 class LoginRejected extends Exception {}
+// 4.3.1: modem nieosiagalny (np. restart routera) - odbiornik sam ponawia polaczenie, Watchdog go nie restartuje.
+class ModemOffline extends Exception {}
 
 function sendOne($p){
     $stmt=$p->query("SELECT * FROM outbox WHERE status='OCZEKUJE' ORDER BY created,id".sql_page($p,1));$r=$stmt->fetch();$stmt->closeCursor();
@@ -117,7 +119,7 @@ $deleteAfterImport=!array_key_exists('delete_after_import',$cfg)||!empty($cfg['d
 $sendPerCycle=max(1,min(20,(int)($cfg['send_per_cycle']??5)));
 $dbSig=db_signature(db_settings($cfg));
 $p=null; // polaczenie z baza nawiazuje petla (takze ponownie po bledzie)
-$ch=null;$token='';
+$ch=null;$token='';$modemDownSince=0;$modemRetry=15;
 while(true){
     try{
         // 4.2.0: przelaczanie bazy w panelu wstrzymuje odbiornik (data\maintenance.flag), a po zmianie
@@ -126,7 +128,11 @@ while(true){
         $dbNow=db_settings(config());
         if(!$p||db_signature($dbNow)!==$dbSig){$p=null;$p=db($dbNow);ensureSchema($p);$dbSig=db_signature($dbNow);echo date('c').' [BAZA] '.db_label($dbNow).PHP_EOL;}
         $receiverPhase='polling';$receiverLastError='';receiverHeartbeat('RUNNING');
-        if(!$ch)login();
+        if(!$ch){
+            login();
+            if($modemDownSince){echo date('c').' [MODEM] Polaczenie przywrocone po '.(time()-$modemDownSince).' s'.PHP_EOL;$modemDownSince=0;}
+            $modemRetry=15;
+        }
         $toDelete=[];
         for($page=1;$page<=25;$page++){
             token();
@@ -158,10 +164,19 @@ while(true){
         $receiverPhase='idle';receiverHeartbeat('RUNNING');
         sleep(15);
     }catch(Throwable $e){
-        $receiverPhase='error';$receiverLastError=substr($e->getMessage(),0,240);
-        try{receiverHeartbeat('ERROR');}catch(Throwable $ignored){}
+        $offline=$e instanceof ModemOffline;
+        $receiverPhase=$offline?'modem_offline':'error';$receiverLastError=substr($e->getMessage(),0,240);
+        // Brak modemu to nie awaria odbiornika: stan MODEM_OFFLINE (Watchdog restartuje tylko przy ERROR lub braku heartbeat).
+        try{receiverHeartbeat($offline?'MODEM_OFFLINE':'ERROR');}catch(Throwable $ignored){}
         echo date('c').' '.$e->getMessage()."\n";
-        if($ch)curl_close($ch);$ch=null;
+        if($ch)curl_close($ch);$ch=null;$token='';
+        if($offline){
+            if(!$modemDownSince)$modemDownSince=time();
+            // Ponawianie co 15 s, potem coraz rzadziej (do 60 s); heartbeat odswiezany w trakcie czekania.
+            for($w=0;$w<$modemRetry;$w+=15){sleep(15);try{receiverHeartbeat('MODEM_OFFLINE');}catch(Throwable $ignored){}}
+            $modemRetry=min(60,$modemRetry*2);
+            continue;
+        }
         if($e instanceof PDOException)$p=null; // polaczenie z baza (np. MS SQL) zostanie nawiazane ponownie
         // Po odrzuconym logowaniu dluzsza przerwa, zeby nie zablokowac konta admin modemu.
         sleep($e instanceof LoginRejected?300:60);

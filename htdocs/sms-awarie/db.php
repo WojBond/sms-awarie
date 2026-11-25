@@ -26,7 +26,12 @@ function db_label(array $s): string {
     return $s['driver'] === 'sqlite' ? 'SQLite (data\\awarie.sqlite)' : 'MS SQL: '.$s['server'].' / '.$s['database'];
 }
 
-function db(?array $s = null): PDO { return db_connect($s ?? db_settings()); }
+// 4.3.1: db('sqlite', $cfg) z wersji 4.0-4.1 nadal dziala (np. stary receiver.php po niepelnej aktualizacji),
+// ale ustawienia bazy zawsze pochodza z config.json, tak jak w nowym kodzie.
+function db(array|string|null $s = null, ?array $c = null): PDO {
+    if (!is_array($s)) $s = db_settings($c);
+    return db_connect($s);
+}
 
 function db_connect(array $s, bool $withDatabase = true): PDO {
     $opts = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC];
