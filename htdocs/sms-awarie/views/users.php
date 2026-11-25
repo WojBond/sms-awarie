@@ -59,18 +59,23 @@ foreach (rows($p, 'SELECT user_id,group_id,level FROM user_group_access') as $a)
 // Uprawnienia do grup zgloszen (4.5.0). Administrator ma zawsze pelny dostep - pola sa wtedy pomijane.
 $accessFields = function (array $r, array $mine) use ($groups): string {
     $all = $r['groups_all'] !== '';
-    $o = '<fieldset class="access"><legend>Dostęp do grup zgłoszeń <small class="muted">(nie dotyczy Administratora)</small></legend>';
-    $o .= '<label class="check"><input type="radio" name="scope" value="all"'.($all ? ' checked' : '').'> Wszystkie grupy, także nowe – poziom ';
-    $o .= '<select name="all_level">';
+    $o = '<fieldset class="access"><legend>Dostęp do grup zgłoszeń</legend>';
+    $o .= '<p class="muted hint">Dotyczy ról Operator i Tylko odczyt. Administrator ma zawsze pełny dostęp, a Tylko odczyt najwyżej Podgląd.</p>';
+    $o .= '<div class="scope" role="radiogroup" aria-label="Zakres grup">';
+    $o .= '<label class="opt"><input type="radio" name="scope" value="all"'.($all ? ' checked' : '').'><span><strong>Wszystkie grupy</strong><small>także grupy dodane w przyszłości</small></span></label>';
+    $o .= '<label class="opt"><input type="radio" name="scope" value="selected"'.($all ? '' : ' checked').'><span><strong>Tylko wybrane grupy</strong><small>poziom osobno dla każdej grupy</small></span></label>';
+    $o .= '</div>';
+    $o .= '<div class="scope-all"><label>Poziom we wszystkich grupach<select name="all_level">';
     foreach (GROUP_LEVELS as $k => $v) $o .= '<option value="'.h($k).'"'.(($all ? $r['groups_all'] : 'view') === $k ? ' selected' : '').'>'.h($v).'</option>';
-    $o .= '</select></label>';
-    $o .= '<label class="check"><input type="radio" name="scope" value="selected"'.($all ? '' : ' checked').'> Tylko wybrane grupy:</label>';
-    $o .= '<div class="table-wrap"><table><thead><tr><th>Grupa</th><th>Dostęp</th></tr></thead><tbody>';
+    $o .= '</select></label></div>';
+    $o .= '<div class="scope-sel"><div class="table-wrap"><table><thead><tr><th>Grupa</th><th>Dostęp</th></tr></thead><tbody>';
     foreach ($groups as $g) $o .= '<tr><td>'.h($g['name']).' <span class="chip">'.h($g['prefix']).'</span>'.((int)$g['active'] ? '' : ' <span class="badge b-grey">Wyłączona</span>').'</td><td>'.level_select('lvl['.$g['id'].']', (string)($mine[$g['id']] ?? ''), 'admin').'</td></tr>';
-    $o .= '</tbody></table></div>';
+    if (!$groups) $o .= '<tr><td colspan="2" class="muted">Brak grup zgłoszeń.</td></tr>';
+    $o .= '</tbody></table></div></div>';
+    $o .= '<div class="extra"><strong>Uprawnienia dodatkowe</strong>';
     $o .= '<label class="check"><input type="checkbox" name="can_send" value="1"'.((int)$r['can_send'] ? ' checked' : '').'> Wysyłka i anulowanie SMS (SMS wychodzące)</label>';
     $o .= '<label class="check"><input type="checkbox" name="see_unassigned" value="1"'.((int)$r['see_unassigned'] ? ' checked' : '').'> Widzi SMS-y nieprzypisane do grup (niepoprawne, wysyłki ręczne)</label>';
-    return $o.'</fieldset>';
+    return $o.'</div></fieldset>';
 };
 $roleSelect = function (string $current): string {
     $o = '<select name="role" required>';
