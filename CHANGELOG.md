@@ -1,5 +1,10 @@
 # Changelog SMS-Awarie
 
+## 4.5.1 – 2026-11-25 (patch)
+- Poprawiony wygląd sekcji **Dostęp do grup zgłoszeń** (Użytkownicy › konto): przyciski wyboru miały szerokość 100% (globalny styl pól), przez co były ogromne i odklejone od etykiet. Zakres to teraz dwa kafelki *Wszystkie grupy* / *Tylko wybrane grupy* z opisem i wyróżnieniem wybranego.
+- Pokazywana jest tylko część pasująca do wyboru: poziom dla wszystkich grup albo tabela grup (CSS `:has`, bez JavaScriptu). *Uprawnienia dodatkowe* w osobnej części pod kreską.
+- Tabela grup zostaje tabelą na telefonie; listy wyboru poziomu w tabelach uprawnień (także na stronie grupy) mają rozsądną szerokość na PC.
+
 ## 4.5.0 – 2026-11-25 (minor)
 - **Uprawnienia per grupa zgłoszeń** dla ról Operator i Tylko odczyt. W Użytkownicy każde konto ma zakres: *Wszystkie grupy, także nowe* z jednym poziomem albo *Tylko wybrane grupy* z poziomem osobno dla każdej grupy. To samo dla jednej grupy na jej stronie: Ustawienia grupy › **Uprawnienia użytkowników**.
 - Poziomy: **Podgląd** (zgłoszenia, statystyki, SMS-y grupy), **Obsługa zgłoszeń** (zmiana statusu i opisu), **Obsługa i obiekty** (dodatkowo dodawanie i wyłączanie obiektów grupy, np. pojazdów). Rola Tylko odczyt ma zawsze najwyżej Podgląd; Administrator ma pełny dostęp.

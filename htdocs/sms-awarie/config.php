@@ -1,7 +1,12 @@
 <?php
 // SMS-Awarie - wersja, changelog, strefa czasowa i sciezki. Jedno zrodlo prawdy dla numeru wersji.
-define('APP_VERSION', '4.5.0');
+define('APP_VERSION', '4.5.1');
 const APP_CHANGELOG = [
+    '4.5.1' => [
+        'Poprawiony wyglad sekcji Dostep do grup zgloszen w formularzu konta: wybor zakresu jako dwa kafelki z opisem, normalnej wielkosci przyciski wyboru.',
+        'Przy "Wszystkie grupy" widac tylko poziom dostepu, przy "Tylko wybrane grupy" tylko tabele grup; uprawnienia dodatkowe w osobnej czesci.',
+        'Tabela grup w formularzu konta czytelna takze na telefonie; wezsze listy wyboru w tabelach uprawnien.',
+    ],
     '4.5.0' => [
         'Uprawnienia Operatora i Tylko odczyt z podzialem na grupy zgloszen: wszystkie grupy z wybranym poziomem albo tylko wybrane grupy.',
         'Poziomy w grupie: Podglad, Obsluga zgloszen (status i opis), Obsluga i obiekty (np. dodawanie i wylaczanie pojazdow). Tylko odczyt ma zawsze najwyzej Podglad.',

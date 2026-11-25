@@ -114,7 +114,7 @@ layout_start($g['name'], $u, $page);
   <?php if (!$people): ?><p class="muted">Brak aktywnych kont Operator i Tylko odczyt.</p><?php else: ?>
   <form method="post" action="<?= h(url('group', ['id' => $gid])) ?>">
     <?= csrf_field() ?><input type="hidden" name="action" value="access">
-    <div class="table-wrap"><table><thead><tr><th>Konto</th><th>Rola</th><th>Dostęp do grupy</th></tr></thead><tbody>
+    <div class="table-wrap access-table"><table><thead><tr><th>Konto</th><th>Rola</th><th>Dostęp do grupy</th></tr></thead><tbody>
     <?php foreach ($people as $r): $allLvl = level_cap($r, (string)$r['groups_all']); ?>
       <tr><td><strong><?= h($r['login']) ?></strong></td><td><?= h(ROLES[$r['role']] ?? $r['role']) ?></td>
       <td><?php if ($allLvl): ?><span class="muted">wszystkie grupy: <?= h(GROUP_LEVELS[array_search($allLvl, LEVEL_RANK, true)]) ?> (zmień w Użytkownicy)</span>

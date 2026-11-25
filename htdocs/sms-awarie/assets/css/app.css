@@ -187,7 +187,31 @@ a.kpi:hover span { color: var(--accent-d); }
   .table-wrap:has(> table.stack) { overflow: visible; }
   .card > .table-wrap, .card > table { margin: 0; }
 }
-/* 4.5.0: uprawnienia do grup w formularzu konta */
-fieldset.access { border: 1px solid var(--line); border-radius: 10px; padding: .75rem 1rem; margin: .75rem 0; min-width: 0; }
+/* 4.5.0/4.5.1: uprawnienia do grup w formularzu konta */
+input[type=radio] { width: 22px; height: 22px; min-height: 0; margin: 0; flex: none; accent-color: var(--accent); }
+fieldset.access { border: 1px solid var(--line); border-radius: var(--radius); padding: .5rem 1rem 1rem; margin: .5rem 0 1rem; min-width: 0; }
 fieldset.access legend { font-weight: 600; padding: 0 .35rem; }
-fieldset.access label.check select { width: auto; margin-left: .25rem; }
+fieldset.access .hint { font-size: .85rem; margin: 0 0 .75rem; }
+.scope { display: grid; gap: .5rem; grid-template-columns: 1fr; margin-bottom: .75rem; }
+@media (min-width: 640px) { .scope { grid-template-columns: 1fr 1fr; } }
+.scope .opt { display: flex; gap: .65rem; align-items: flex-start; margin: 0; padding: .7rem .85rem; min-height: 44px; border: 1px solid var(--line); border-radius: var(--radius-s); background: #fff; cursor: pointer; }
+.scope .opt input { margin-top: .1rem; }
+.scope .opt span { display: flex; flex-direction: column; }
+.scope .opt small { color: var(--muted); font-size: .85rem; }
+.scope .opt:has(input:checked) { border-color: var(--accent); background: var(--blue-bg); }
+.scope-all select { max-width: 320px; }
+.scope-sel table { margin-bottom: .25rem; }
+.scope-sel td { vertical-align: middle; }
+.scope-sel select { margin: 0; max-width: 320px; }
+fieldset.access:has(input[name=scope][value=all]:checked) .scope-sel,
+fieldset.access:has(input[name=scope][value=selected]:checked) .scope-all { display: none; }
+fieldset.access .extra { border-top: 1px solid var(--line); margin-top: .75rem; padding-top: .75rem; }
+fieldset.access .extra > strong { display: block; margin-bottom: .5rem; font-size: .95rem; }
+fieldset.access .extra label.check { margin-bottom: .5rem; }
+.access-table select { margin: 0; max-width: 320px; }
+/* Mala tabela grup w formularzu konta zostaje tabela takze na telefonie (2 kolumny mieszcza sie). */
+.scope-sel table.stack thead, .scope-sel table.stack tbody, .scope-sel table.stack tr, .scope-sel table.stack td { display: revert; width: auto; }
+.scope-sel table.stack { display: table; width: 100%; }
+.scope-sel table.stack td { padding: .5rem .5rem .5rem 0; border-bottom: 1px solid var(--line); }
+.scope-sel table.stack td::before { content: none; }
+.scope-sel table.stack td.empty { display: revert; }
