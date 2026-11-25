@@ -39,7 +39,7 @@ function current_user(PDO $p): ?array {
     if (empty($_SESSION['user'])) return null;
     static $u = false;
     if ($u === false) {
-        $q = $p->prepare('SELECT id,login,role FROM web_users WHERE id=? AND active=1');
+        $q = $p->prepare('SELECT id,login,role,groups_all,can_send,see_unassigned FROM web_users WHERE id=? AND active=1');
         $q->execute([$_SESSION['user']]);
         $u = $q->fetch() ?: null;
     }
@@ -47,6 +47,66 @@ function current_user(PDO $p): ?array {
 }
 function can_write(?array $u): bool { return $u && in_array($u['role'], ['admin', 'operator'], true); }
 function is_admin(?array $u): bool { return $u && $u['role'] === 'admin'; }
+
+// 4.5.0: uprawnienia do grup zgloszen. Poziomy rosnaco; rola ogranicza najwyzszy poziom (Tylko odczyt = Podglad).
+const GROUP_LEVELS = ['view' => 'Podgląd', 'handle' => 'Obsługa zgłoszeń', 'manage' => 'Obsługa i obiekty'];
+const LEVEL_RANK = ['view' => 1, 'handle' => 2, 'manage' => 3];
+const ROLE_MAX_LEVEL = ['admin' => 3, 'operator' => 3, 'read-only' => 1];
+function level_cap(array $u, string $level): int { return min(LEVEL_RANK[$level] ?? 0, ROLE_MAX_LEVEL[$u['role']] ?? 0); }
+
+// [id grupy => poziom 1..3] dla grup, do ktorych uzytkownik ma dostep (bez 'all' = tylko przypisane).
+function group_levels(PDO $p, array $u): array {
+    static $cache = [];
+    if (isset($cache[$u['id']])) return $cache[$u['id']];
+    $out = [];
+    $all = is_admin($u) ? 3 : level_cap($u, (string)($u['groups_all'] ?? ''));
+    if ($all > 0) foreach (rows($p, 'SELECT id FROM incident_groups') as $g) $out[$g['id']] = $all;
+    else foreach (rows($p, 'SELECT group_id,level FROM user_group_access WHERE user_id=?', [$u['id']]) as $r) if ($l = level_cap($u, $r['level'])) $out[$r['group_id']] = $l;
+    return $cache[$u['id']] = $out;
+}
+function group_level(PDO $p, array $u, ?string $gid): int { return $gid === null ? (all_groups_level($u) ?: 0) : (group_levels($p, $u)[$gid] ?? 0); }
+function all_groups_level(array $u): int { return is_admin($u) ? 3 : level_cap($u, (string)($u['groups_all'] ?? '')); }
+function can_handle(PDO $p, ?array $u, ?string $gid): bool { return can_write($u) && group_level($p, $u, $gid) >= 2; }
+function can_send(?array $u): bool { return can_write($u) && (is_admin($u) || (int)($u['can_send'] ?? 0) === 1); }
+function sees_unassigned(?array $u): bool { return $u && (is_admin($u) || (int)($u['see_unassigned'] ?? 0) === 1); }
+
+// Warunek SQL ograniczajacy kolumne z id grupy do grup z poziomem >= $min. '' = bez ograniczen.
+function group_filter(PDO $p, array $u, string $col, int $min = 1): array {
+    if (all_groups_level($u) >= $min) return ['', []];
+    $ids = array_keys(array_filter(group_levels($p, $u), fn($l) => $l >= $min));
+    if (!$ids) return ['1=0', []];
+    return ["$col IN (".implode(',', array_fill(0, count($ids), '?')).')', $ids];
+}
+// Zakres SMS odebranych ($kind='sms') i wychodzacych ('outbox') dla uzytkownika: wiadomosci zwiazane
+// ze zgloszeniami dozwolonych grup oraz - gdy ma uprawnienie - nieprzypisane (niepoprawne SMS, wysylki reczne).
+function scope_filter(PDO $p, array $u, string $kind, string $alias): array {
+    [$gf, $args] = group_filter($p, $u, 'tg.group_id');
+    $unassigned = sees_unassigned($u);
+    if ($gf === '' && $unassigned) return ['', []];
+    $link = $kind === 'sms'
+        ? "SELECT 1 FROM tickets st LEFT JOIN ticket_groups tg ON tg.ticket_id=st.id WHERE st.sms_id=$alias.id"
+        : "SELECT 1 FROM notification_deliveries nd LEFT JOIN ticket_groups tg ON tg.ticket_id=nd.ticket_id WHERE nd.outbox_id=$alias.id";
+    $sql = "EXISTS($link".($gf !== '' ? " AND $gf" : '').')';
+    if ($unassigned) $sql = "($sql OR NOT EXISTS($link))";
+    return [$sql, $args];
+}
+// Lista wyboru poziomu dostepu do grupy; rola Tylko odczyt ma tylko Podglad.
+function level_select(string $name, string $current, string $role): string {
+    $max = ROLE_MAX_LEVEL[$role] ?? 0;
+    if ((LEVEL_RANK[$current] ?? 0) > $max) $current = (string)array_search($max, LEVEL_RANK, true);
+    $o = '<select name="'.h($name).'"><option value="">Brak dostępu</option>';
+    foreach (GROUP_LEVELS as $k => $v) {
+        if (LEVEL_RANK[$k] > (ROLE_MAX_LEVEL[$role] ?? 0)) continue;
+        $o .= '<option value="'.h($k).'"'.($k === $current ? ' selected' : '').'>'.h($v).'</option>';
+    }
+    return $o.'</select>';
+}
+// Krotki opis zakresu konta (lista uzytkownikow, stopka menu).
+function access_summary(array $r, int $assigned = 0): string {
+    if ($r['role'] === 'admin') return 'pełny dostęp';
+    $lvl = array_search(level_cap($r, (string)$r['groups_all']), LEVEL_RANK, true);
+    return $lvl ? 'wszystkie grupy: '.GROUP_LEVELS[$lvl] : 'wybrane grupy: '.$assigned;
+}
 
 function audit(PDO $p, array $u, string $action, string $target = ''): void {
     $p->prepare('INSERT INTO web_audit(created,actor,action,target) VALUES(?,?,?,?)')->execute([date('Y-m-d H:i:s'), $u['login'], $action, $target]);

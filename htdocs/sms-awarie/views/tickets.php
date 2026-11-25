@@ -7,6 +7,9 @@ if ($post) {
     $desc = trim((string)($_POST['description'] ?? ''));
     if (!isset(TICKET_STATUSES[$status]) || $desc === '' || mb_strlen($desc) > 4000) {
         flash('Niepoprawne dane zgłoszenia.', 'err');
+    } elseif (!can_handle($p, $u, ($tg = one($p, 'SELECT group_id FROM ticket_groups WHERE ticket_id=?', [$id])) === false ? null : (string)$tg)) {
+        // 4.5.0: zmiana zgloszenia wymaga poziomu Obsluga w jego grupie.
+        flash('Brak uprawnień do obsługi zgłoszeń tej grupy.', 'err');
     } else {
         $q = $p->prepare('UPDATE tickets SET status=?,description=? WHERE id=?');
         $q->execute([$status, $desc, $id]);
@@ -19,11 +22,13 @@ if ($post) {
 $f = ['status' => (string)($_GET['status'] ?? ''), 'group' => (string)($_GET['group'] ?? ''), 'q' => trim((string)($_GET['q'] ?? ''))];
 $where = [];
 $args = [];
+[$gf, $ga] = group_filter($p, $u, 'tg.group_id');
+if ($gf !== '') { $where[] = $gf; $args = $ga; }
 if ($f['status'] !== '') { $where[] = 't.status=?'; $args[] = $f['status']; }
 if ($f['group'] !== '') { $where[] = 'tg.group_id=?'; $args[] = $f['group']; }
 if ($f['q'] !== '') { $where[] = '(t.plate LIKE ? OR t.description LIKE ? OR s.sender LIKE ?)'; array_push($args, "%{$f['q']}%", "%{$f['q']}%", "%{$f['q']}%"); }
 $from = "FROM tickets t LEFT JOIN ticket_groups tg ON tg.ticket_id=t.id LEFT JOIN incident_groups g ON g.id=tg.group_id LEFT JOIN sms s ON s.id=t.sms_id".($where ? ' WHERE '.implode(' AND ', $where) : '');
-$select = "SELECT t.id,t.plate,t.description,t.status,t.created,t.seq,COALESCE(g.name,'Pojazdy') AS group_name,s.sender,s.content AS sms_content $from ORDER BY t.created DESC";
+$select = "SELECT t.id,t.plate,t.description,t.status,t.created,t.seq,tg.group_id,COALESCE(g.name,'Pojazdy') AS group_name,s.sender,s.content AS sms_content $from ORDER BY t.created DESC";
 
 if (($_GET['export'] ?? '') === 'csv') {
     $out = [];
@@ -35,7 +40,8 @@ if (($_GET['export'] ?? '') === 'csv') {
 
 $total = (int)one($p, "SELECT COUNT(*) $from", $args);
 $list = rows($p, $select.sql_page($p, PER_PAGE, (page_no() - 1) * PER_PAGE), $args);
-$groups = rows($p, 'SELECT id,name FROM incident_groups ORDER BY name');
+[$gf2, $ga2] = group_filter($p, $u, 'id');
+$groups = rows($p, 'SELECT id,name FROM incident_groups'.($gf2 !== '' ? " WHERE $gf2" : '').' ORDER BY name', $ga2);
 
 layout_start($title, $u, $page);
 ?>
@@ -48,7 +54,7 @@ layout_start($title, $u, $page);
   <a class="btn btn-o" href="<?= h(url('tickets', $f + ['export' => 'csv'])) ?>">Eksport CSV</a>
 </form>
 <?php if (!$list): ?><p class="muted">Brak zgłoszeń.</p><?php endif; ?>
-<?php foreach ($list as $r): $num = ticketNumberFrom($r['id'], $r['created'], $r['seq'] !== null ? (int)$r['seq'] : null); ?>
+<?php foreach ($list as $r): $num = ticketNumberFrom($r['id'], $r['created'], $r['seq'] !== null ? (int)$r['seq'] : null); $rw = can_handle($p, $u, $r['group_id']); ?>
 <details class="card item">
   <summary>
     <strong><?= h($num) ?></strong> <?= badge($r['status']) ?>
@@ -59,9 +65,9 @@ layout_start($title, $u, $page);
   <p class="muted">Zgłaszający: <?= h($r['sender']) ?> · treść SMS: „<?= h($r['sms_content']) ?>”</p>
   <form method="post" action="<?= h(url('tickets', $f + ['n' => page_no()])) ?>">
     <?= csrf_field() ?><input type="hidden" name="id" value="<?= h($r['id']) ?>">
-    <label>Opis<textarea name="description" rows="3" maxlength="4000" required<?= can_write($u) ? '' : ' readonly' ?>><?= h($r['description']) ?></textarea></label>
-    <label>Status<select name="status"<?= can_write($u) ? '' : ' disabled' ?>><?php foreach (TICKET_STATUSES as $k => $v): ?><option value="<?= h($k) ?>"<?= $r['status'] === $k ? ' selected' : '' ?>><?= h($v) ?></option><?php endforeach; ?></select></label>
-    <?php if (can_write($u)): ?><button class="btn">Zapisz</button><?php endif; ?>
+    <label>Opis<textarea name="description" rows="3" maxlength="4000" required<?= $rw ? '' : ' readonly' ?>><?= h($r['description']) ?></textarea></label>
+    <label>Status<select name="status"<?= $rw ? '' : ' disabled' ?>><?php foreach (TICKET_STATUSES as $k => $v): ?><option value="<?= h($k) ?>"<?= $r['status'] === $k ? ' selected' : '' ?>><?= h($v) ?></option><?php endforeach; ?></select></label>
+    <?php if ($rw): ?><button class="btn">Zapisz</button><?php elseif (can_write($u)): ?><p class="muted">Tylko podgląd – brak uprawnień do obsługi zgłoszeń tej grupy.</p><?php endif; ?>
   </form>
 </details>
 <?php endforeach; ?>

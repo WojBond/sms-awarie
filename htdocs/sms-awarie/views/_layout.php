@@ -5,7 +5,8 @@
 function nav_items(?array $u): array {
     $groups = [['groups', 'Wszystkie grupy', [], '']];
     try {
-        foreach (rows($GLOBALS['p'], 'SELECT id,name FROM incident_groups WHERE active=1 ORDER BY legacy_vehicle DESC, name') as $g) $groups[] = ['group', $g['name'], ['id' => $g['id']], ''];
+        $lv = $u ? group_levels($GLOBALS['p'], $u) : [];
+        foreach (rows($GLOBALS['p'], 'SELECT id,name FROM incident_groups WHERE active=1 ORDER BY legacy_vehicle DESC, name') as $g) if (isset($lv[$g['id']])) $groups[] = ['group', $g['name'], ['id' => $g['id']], ''];
     } catch (Throwable $e) { /* menu bez listy grup */ }
     return [
         ['dashboard', 'Dashboard', [], ''],

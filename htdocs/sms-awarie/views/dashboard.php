@@ -2,16 +2,23 @@
 require __DIR__.'/_layout.php';
 
 $hb = heartbeat();
+// 4.5.0: liczniki i listy tylko z grup, do ktorych uzytkownik ma dostep.
+[$gf, $ga] = group_filter($p, $u, 'tg.group_id');
+$gw = $gf !== '' ? " AND $gf" : '';
+[$of, $oa] = scope_filter($p, $u, 'outbox', 'o');
+$ow = $of !== '' ? " AND $of" : '';
+$tcount = fn(string $st) => one($p, "SELECT COUNT(*) FROM tickets t LEFT JOIN ticket_groups tg ON tg.ticket_id=t.id WHERE t.status=?$gw", array_merge([$st], $ga));
 // [etykieta, liczba, link do przefiltrowanej listy, kolor paska]
 $kpis = [
-    ['Nowe', one($p, "SELECT COUNT(*) FROM tickets WHERE status='NOWE'"), url('tickets', ['status' => 'NOWE']), 'k-blue'],
-    ['Weryfikacja', one($p, "SELECT COUNT(*) FROM tickets WHERE status='WERYFIKACJA'"), url('tickets', ['status' => 'WERYFIKACJA']), 'k-amber'],
-    ['W realizacji', one($p, "SELECT COUNT(*) FROM tickets WHERE status='W_REALIZACJI'"), url('tickets', ['status' => 'W_REALIZACJI']), 'k-violet'],
-    ['SMS oczekujące', one($p, "SELECT COUNT(*) FROM outbox WHERE status='OCZEKUJE'"), url('outbox', ['status' => 'OCZEKUJE']), 'k-green'],
+    ['Nowe', $tcount('NOWE'), url('tickets', ['status' => 'NOWE']), 'k-blue'],
+    ['Weryfikacja', $tcount('WERYFIKACJA'), url('tickets', ['status' => 'WERYFIKACJA']), 'k-amber'],
+    ['W realizacji', $tcount('W_REALIZACJI'), url('tickets', ['status' => 'W_REALIZACJI']), 'k-violet'],
+    ['SMS oczekujące', one($p, "SELECT COUNT(*) FROM outbox o WHERE o.status='OCZEKUJE'$ow", $oa), url('outbox', ['status' => 'OCZEKUJE']), 'k-green'],
 ];
-$groupStats = rows($p, 'SELECT g.id,g.name,COUNT(tg.ticket_id) AS total FROM incident_groups g LEFT JOIN ticket_groups tg ON tg.group_id=g.id WHERE g.active=1 GROUP BY g.id,g.name ORDER BY g.name');
-$open = rows($p, "SELECT t.id,t.plate,t.description,t.status,t.created,t.seq,COALESCE(g.name,'Pojazdy') AS group_name FROM tickets t LEFT JOIN ticket_groups tg ON tg.ticket_id=t.id LEFT JOIN incident_groups g ON g.id=tg.group_id WHERE t.status IN ('NOWE','WERYFIKACJA') ORDER BY t.created DESC".sql_page($p, 10));
-$verify = rows($p, "SELECT phone,content,status,created,detail FROM outbox WHERE status IN ('W_TRAKCIE','NIEPEWNY') ORDER BY created DESC".sql_page($p, 20));
+[$gf2, $ga2] = group_filter($p, $u, 'g.id');
+$groupStats = rows($p, 'SELECT g.id,g.name,COUNT(tg.ticket_id) AS total FROM incident_groups g LEFT JOIN ticket_groups tg ON tg.group_id=g.id WHERE g.active=1'.($gf2 !== '' ? " AND $gf2" : '').' GROUP BY g.id,g.name ORDER BY g.name', $ga2);
+$open = rows($p, "SELECT t.id,t.plate,t.description,t.status,t.created,t.seq,COALESCE(g.name,'Pojazdy') AS group_name FROM tickets t LEFT JOIN ticket_groups tg ON tg.ticket_id=t.id LEFT JOIN incident_groups g ON g.id=tg.group_id WHERE t.status IN ('NOWE','WERYFIKACJA')$gw ORDER BY t.created DESC".sql_page($p, 10), $ga);
+$verify = rows($p, "SELECT o.phone,o.content,o.status,o.created,o.detail FROM outbox o WHERE o.status IN ('W_TRAKCIE','NIEPEWNY')$ow ORDER BY o.created DESC".sql_page($p, 20), $oa);
 $modem = $hb['raw']['modem'] ?? null;
 $wd = is_admin($u) ? @json_decode((string)@file_get_contents(DATA_DIR.'/watchdog-state.json'), true) : null;
 
@@ -42,6 +49,7 @@ ob_start(); ?>
   </section>
   <section class="card">
     <h2>Zgłoszenia według grup</h2>
+    <?php if (!$groupStats): ?><p class="muted">Nie masz dostępu do żadnej grupy zgłoszeń. Poproś administratora o uprawnienia.</p><?php endif; ?>
     <p class="chips"><?php foreach ($groupStats as $g): ?><a class="chip" href="<?= h(url('group', ['id' => $g['id']])) ?>"><?= h($g['name']) ?> <strong><?= (int)$g['total'] ?></strong></a><?php endforeach; ?></p>
   </section>
 </div>

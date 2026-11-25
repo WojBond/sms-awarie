@@ -4,11 +4,14 @@ require __DIR__.'/_layout.php';
 $f = ['status' => (string)($_GET['status'] ?? ''), 'q' => trim((string)($_GET['q'] ?? ''))];
 $where = [];
 $args = [];
-if ($f['status'] !== '') { $where[] = 'status=?'; $args[] = $f['status']; }
-if ($f['q'] !== '') { $where[] = '(sender LIKE ? OR content LIKE ?)'; array_push($args, "%{$f['q']}%", "%{$f['q']}%"); }
+// 4.5.0: tylko SMS-y zgloszen z dozwolonych grup (i nieprzypisane, gdy konto ma to uprawnienie).
+[$sf, $sa] = scope_filter($p, $u, 'sms', 'm');
+if ($sf !== '') { $where[] = $sf; $args = $sa; }
+if ($f['status'] !== '') { $where[] = 'm.status=?'; $args[] = $f['status']; }
+if ($f['q'] !== '') { $where[] = '(m.sender LIKE ? OR m.content LIKE ?)'; array_push($args, "%{$f['q']}%", "%{$f['q']}%"); }
 $w = $where ? ' WHERE '.implode(' AND ', $where) : '';
-$total = (int)one($p, "SELECT COUNT(*) FROM sms$w", $args);
-$list = rows($p, "SELECT sender,content,received,status FROM sms$w ORDER BY received DESC".sql_page($p, PER_PAGE, (page_no() - 1) * PER_PAGE), $args);
+$total = (int)one($p, "SELECT COUNT(*) FROM sms m$w", $args);
+$list = rows($p, "SELECT m.sender,m.content,m.received,m.status FROM sms m$w ORDER BY m.received DESC".sql_page($p, PER_PAGE, (page_no() - 1) * PER_PAGE), $args);
 $statuses = array_column(rows($p, 'SELECT DISTINCT status FROM sms ORDER BY status'), 'status');
 
 layout_start($title, $u, $page);

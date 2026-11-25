@@ -187,3 +187,7 @@ a.kpi:hover span { color: var(--accent-d); }
   .table-wrap:has(> table.stack) { overflow: visible; }
   .card > .table-wrap, .card > table { margin: 0; }
 }
+/* 4.5.0: uprawnienia do grup w formularzu konta */
+fieldset.access { border: 1px solid var(--line); border-radius: 10px; padding: .75rem 1rem; margin: .75rem 0; min-width: 0; }
+fieldset.access legend { font-weight: 600; padding: 0 .35rem; }
+fieldset.access label.check select { width: auto; margin-left: .25rem; }

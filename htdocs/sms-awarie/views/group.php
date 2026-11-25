@@ -6,6 +6,10 @@ require __DIR__.'/_groups.php';
 $gid = (string)($_GET['id'] ?? '');
 $g = rows($p, 'SELECT * FROM incident_groups WHERE id=?', [$gid])[0] ?? null;
 if (!$g) { flash('Nie znaleziono grupy.', 'err'); redirect('groups'); }
+// 4.5.0: strona grupy tylko z dostepem do niej; pojazdy (obiekty grupy) zmienia poziom "Obsluga i obiekty".
+$level = group_level($p, $u, $gid);
+if ($level < 1) { http_response_code(403); flash('Brak dostępu do tej grupy zgłoszeń.', 'err'); redirect('groups'); }
+$canObjects = can_write($u) && $level >= 3;
 $isVehicles = (int)$g['legacy_vehicle'] === 1;
 $all = !empty($_GET['all']);
 
@@ -15,6 +19,21 @@ if ($post) {
         if (!is_admin($u)) { flash('Grupy zmienia administrator.', 'err'); redirect('group', ['id' => $gid]); }
         $_POST['id'] = $gid;
         group_save($p, $u, 'group', ['id' => $gid]);
+    } elseif ($act === 'access') {
+        if (!is_admin($u)) { flash('Uprawnienia nadaje administrator.', 'err'); redirect('group', ['id' => $gid]); }
+        $lv = (array)($_POST['lvl'] ?? []);
+        $p->beginTransaction();
+        foreach (rows($p, "SELECT id,login FROM web_users WHERE role<>'admin'") as $usr) {
+            if (!array_key_exists($usr['id'], $lv)) continue;
+            $l = (string)$lv[$usr['id']];
+            $p->prepare('DELETE FROM user_group_access WHERE user_id=? AND group_id=?')->execute([$usr['id'], $gid]);
+            if (isset(LEVEL_RANK[$l])) $p->prepare('INSERT INTO user_group_access(user_id,group_id,level) VALUES(?,?,?)')->execute([$usr['id'], $gid, $l]);
+        }
+        audit($p, $u, 'groups:access', $gid);
+        $p->commit();
+        flash('Zapisano uprawnienia do grupy.');
+    } elseif (!$canObjects) {
+        flash('Brak uprawnień do zmiany obiektów tej grupy.', 'err');
     } elseif ($isVehicles && $act === 'add') {
         $reg = plate((string)($_POST['plate'] ?? ''));
         if (!preg_match('/^[A-Z0-9]{4,12}$/D', $reg)) {
@@ -65,7 +84,7 @@ layout_start($g['name'], $u, $page);
 <?php if ($isVehicles): ?>
 <section class="card">
   <div class="card-head"><h2>Pojazdy</h2><a class="btn btn-o" href="<?= h(url('group', $all ? ['id' => $gid] : ['id' => $gid, 'all' => 1])) ?>"><?= $all ? 'Pokaż tylko aktywne' : 'Pokaż także wyłączone' ?></a></div>
-  <?php if (can_write($u)): ?>
+  <?php if ($canObjects): ?>
   <form method="post" action="<?= h(url('group', ['id' => $gid])) ?>" class="filters">
     <?= csrf_field() ?><input type="hidden" name="action" value="add">
     <label>Nowa rejestracja<input name="plate" required placeholder="PZ12345"></label>
@@ -77,7 +96,7 @@ layout_start($g['name'], $u, $page);
   <tbody>
   <?php foreach ($vehicles as $r): ?>
     <tr><td><strong><?= h($r['plate']) ?></strong></td><td><?= (int)$r['tickets'] ?></td><td><?= $r['active'] ? '<span class="badge b-green">Aktywny</span>' : '<span class="badge b-grey">Wyłączony</span>' ?></td>
-    <td><?php if (can_write($u)): $a = $r['active'] ? 'deactivate' : 'activate'; ?><form method="post" action="<?= h(url('group', ['id' => $gid, 'all' => $all ? 1 : ''])) ?>"<?= $r['active'] ? ' data-confirm="Wyłączyć pojazd '.h($r['plate']).'?"' : '' ?>><?= csrf_field() ?><input type="hidden" name="action" value="<?= $a ?>"><input type="hidden" name="id" value="<?= h($r['id']) ?>"><button class="btn btn-o"><?= $r['active'] ? 'Wyłącz' : 'Włącz' ?></button></form><?php endif; ?></td></tr>
+    <td><?php if ($canObjects): $a = $r['active'] ? 'deactivate' : 'activate'; ?><form method="post" action="<?= h(url('group', ['id' => $gid, 'all' => $all ? 1 : ''])) ?>"<?= $r['active'] ? ' data-confirm="Wyłączyć pojazd '.h($r['plate']).'?"' : '' ?>><?= csrf_field() ?><input type="hidden" name="action" value="<?= $a ?>"><input type="hidden" name="id" value="<?= h($r['id']) ?>"><button class="btn btn-o"><?= $r['active'] ? 'Wyłącz' : 'Włącz' ?></button></form><?php endif; ?></td></tr>
   <?php endforeach; ?>
   <?php if (!$vehicles): ?><tr><td colspan="4" class="muted">Brak pojazdów.</td></tr><?php endif; ?>
   </tbody></table></div>
@@ -88,6 +107,23 @@ layout_start($g['name'], $u, $page);
 <details class="card item"<?= $isVehicles ? '' : ' open' ?>>
   <summary><strong>Ustawienia grupy</strong> <small class="muted">szablony SMS i odbiorcy</small></summary>
   <?php group_form($g, $phones, url('group', ['id' => $gid])); ?>
+</details>
+<?php $people = rows($p, "SELECT w.id,w.login,w.role,w.groups_all,a.level FROM web_users w LEFT JOIN user_group_access a ON a.user_id=w.id AND a.group_id=? WHERE w.role<>'admin' AND w.active=1 ORDER BY w.login", [$gid]); ?>
+<details class="card item">
+  <summary><strong>Uprawnienia użytkowników</strong> <small class="muted">kto widzi i obsługuje tę grupę</small></summary>
+  <?php if (!$people): ?><p class="muted">Brak aktywnych kont Operator i Tylko odczyt.</p><?php else: ?>
+  <form method="post" action="<?= h(url('group', ['id' => $gid])) ?>">
+    <?= csrf_field() ?><input type="hidden" name="action" value="access">
+    <div class="table-wrap"><table><thead><tr><th>Konto</th><th>Rola</th><th>Dostęp do grupy</th></tr></thead><tbody>
+    <?php foreach ($people as $r): $allLvl = level_cap($r, (string)$r['groups_all']); ?>
+      <tr><td><strong><?= h($r['login']) ?></strong></td><td><?= h(ROLES[$r['role']] ?? $r['role']) ?></td>
+      <td><?php if ($allLvl): ?><span class="muted">wszystkie grupy: <?= h(GROUP_LEVELS[array_search($allLvl, LEVEL_RANK, true)]) ?> (zmień w Użytkownicy)</span>
+      <?php else: echo level_select('lvl['.$r['id'].']', (string)$r['level'], $r['role']); endif; ?></td></tr>
+    <?php endforeach; ?>
+    </tbody></table></div>
+    <button class="btn">Zapisz uprawnienia</button>
+  </form>
+  <?php endif; ?>
 </details>
 <?php endif; ?>
 <?php layout_end();
