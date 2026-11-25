@@ -20,6 +20,7 @@ const PAGES = [
     'users'     => ['users', 'Użytkownicy', 'admin'],
     'settings'  => ['settings', 'Autoodpowiedzi', 'admin'],
     'modem'     => ['modem', 'Modem', 'admin'],
+    'mail'      => ['mail', 'Poczta e-mail', 'admin'],
     'database'  => ['database', 'Baza danych', 'admin'],
     'services'  => ['services', 'Usługi', 'admin'],
     'logs'      => ['logs', 'Dziennik zdarzeń', 'admin'],

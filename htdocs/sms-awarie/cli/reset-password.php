@@ -12,5 +12,5 @@ if (!$id) exit("Brak konta $login\n");
 echo 'Nowe haslo (min. 12 znakow): ';
 $pass = trim((string)fgets(STDIN));
 if (strlen($pass) < 12) exit("Haslo za krotkie\n");
-$p->prepare('UPDATE web_users SET password_hash=?,active=1 WHERE id=?')->execute([password_hash($pass, PASSWORD_DEFAULT), $id]);
+$p->prepare('UPDATE web_users SET password_hash=?,active=1,login_enabled=1 WHERE id=?')->execute([password_hash($pass, PASSWORD_DEFAULT), $id]);
 echo "OK - haslo zmienione, konto aktywne.\n";

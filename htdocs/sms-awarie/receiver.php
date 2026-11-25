@@ -183,6 +183,9 @@ while(true){
         if($pending>0)echo "[OUTBOX] Oczekujace: ".$pending.PHP_EOL;
         $receiverPhase='sending';receiverHeartbeat('RUNNING');
         sendQueued($p,$sendPerCycle);
+        // 4.6.0: e-maile z kolejki (Ustawienia > Poczta e-mail); ustawienia czytane w kazdym cyklu.
+        $smtp=smtp_settings(config());
+        if(smtp_ready($smtp)){$receiverPhase='mail';receiverHeartbeat('RUNNING');sendQueuedMail($p,$smtp,$sendPerCycle,fn()=>receiverHeartbeat('RUNNING'));}
         $receiverPhase='idle';receiverHeartbeat('RUNNING');
         receiverNap(15);
     }catch(Throwable $e){

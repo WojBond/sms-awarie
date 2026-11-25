@@ -19,6 +19,9 @@ if ($post) {
         if (!is_admin($u)) { flash('Grupy zmienia administrator.', 'err'); redirect('group', ['id' => $gid]); }
         $_POST['id'] = $gid;
         group_save($p, $u, 'group', ['id' => $gid]);
+    } elseif ($act === 'members') {
+        if (!is_admin($u)) { flash('Odbiorców ustawia administrator.', 'err'); redirect('group', ['id' => $gid]); }
+        group_members_save($p, $u, $gid);
     } elseif ($act === 'access') {
         if (!is_admin($u)) { flash('Uprawnienia nadaje administrator.', 'err'); redirect('group', ['id' => $gid]); }
         $lv = (array)($_POST['lvl'] ?? []);
@@ -60,13 +63,13 @@ $stats = [];
 foreach (TICKET_STATUSES as $k => $label) $stats[$k] = 0;
 foreach (rows($p, 'SELECT t.status,COUNT(*) AS n FROM tickets t JOIN ticket_groups tg ON tg.ticket_id=t.id WHERE tg.group_id=? GROUP BY t.status', [$gid]) as $r) $stats[$r['status']] = (int)$r['n'];
 $recent = rows($p, 'SELECT t.id,t.plate,t.description,t.status,t.created,t.seq FROM tickets t JOIN ticket_groups tg ON tg.ticket_id=t.id WHERE tg.group_id=? ORDER BY t.created DESC'.sql_page($p, 10), [$gid]);
-$phones = array_column(rows($p, 'SELECT phone FROM group_recipients WHERE group_id=? AND active=1 ORDER BY phone', [$gid]), 'phone');
+$recipientCount = group_recipient_counts($p)[$gid] ?? 0;
 $vehicles = $isVehicles ? rows($p, 'SELECT v.id,v.plate,v.active,COUNT(t.id) AS tickets FROM vehicles v LEFT JOIN tickets t ON t.plate=v.plate'.($all ? '' : ' WHERE v.active=1').' GROUP BY v.id,v.plate,v.active ORDER BY v.plate') : [];
 
 layout_start($g['name'], $u, $page);
 ?>
 <p><span class="chip">Prefiks SMS: <strong><?= h($g['prefix']) ?></strong></span> <?= (int)$g['active'] ? '<span class="badge b-green">Aktywna</span>' : '<span class="badge b-grey">Wyłączona</span>' ?>
-  <small class="muted">odbiorców powiadomień: <?= count($phones) ?></small></p>
+  <small class="muted">odbiorców powiadomień: <?= $recipientCount ?></small></p>
 <div class="kpis">
 <?php foreach (TICKET_STATUSES as $k => $label): ?>
   <a class="card kpi <?= ['NOWE' => 'k-blue', 'WERYFIKACJA' => 'k-amber', 'W_REALIZACJI' => 'k-violet', 'ZAMKNIETE' => 'k-green'][$k] ?? '' ?>" href="<?= h(url('tickets', ['group' => $gid, 'status' => $k])) ?>"><span><?= h($label) ?></span><strong><?= $stats[$k] ?></strong></a>
@@ -105,8 +108,12 @@ layout_start($g['name'], $u, $page);
 
 <?php if (is_admin($u)): ?>
 <details class="card item"<?= $isVehicles ? '' : ' open' ?>>
-  <summary><strong>Ustawienia grupy</strong> <small class="muted">szablony SMS i odbiorcy</small></summary>
-  <?php group_form($g, $phones, url('group', ['id' => $gid])); ?>
+  <summary><strong>Ustawienia grupy</strong> <small class="muted">nazwa, prefiks i szablony SMS</small></summary>
+  <?php group_form($g, url('group', ['id' => $gid])); ?>
+</details>
+<details class="card item" id="odbiorcy"<?= $recipientCount ? '' : ' open' ?>>
+  <summary><strong>Odbiorcy powiadomień</strong> <small class="muted">użytkownicy dostający SMS i e-mail o nowych zgłoszeniach: <?= $recipientCount ?></small></summary>
+  <?php group_members_form($p, $g); ?>
 </details>
 <?php $people = rows($p, "SELECT w.id,w.login,w.role,w.groups_all,a.level FROM web_users w LEFT JOIN user_group_access a ON a.user_id=w.id AND a.group_id=? WHERE w.role<>'admin' AND w.active=1 ORDER BY w.login", [$gid]); ?>
 <details class="card item">

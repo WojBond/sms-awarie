@@ -39,7 +39,7 @@ function current_user(PDO $p): ?array {
     if (empty($_SESSION['user'])) return null;
     static $u = false;
     if ($u === false) {
-        $q = $p->prepare('SELECT id,login,role,groups_all,can_send,see_unassigned FROM web_users WHERE id=? AND active=1');
+        $q = $p->prepare('SELECT id,login,role,groups_all,can_send,see_unassigned,email,phone FROM web_users WHERE id=? AND active=1 AND login_enabled=1');
         $q->execute([$_SESSION['user']]);
         $u = $q->fetch() ?: null;
     }

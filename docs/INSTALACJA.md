@@ -88,6 +88,14 @@ Użytkownicy › konto › **Dostęp do grup zgłoszeń** (Operator i Tylko odcz
 
 Rola Tylko odczyt ma najwyżej Podgląd. Dodatkowo: **Wysyłka i anulowanie SMS** (Nowy SMS, Anuluj w SMS wychodzących) i **SMS-y nieprzypisane do grup** (niepoprawne SMS-y, wysyłki ręczne).
 
+## 3c. Powiadomienia e-mail i odbiorcy grup (od 4.6.0)
+
+1. **Ustawienia › Poczta e-mail** – wpisz serwer SMTP, port i szyfrowanie (Microsoft 365: `smtp.office365.com`, 587, STARTTLS; Gmail: `smtp.gmail.com`, 587, STARTTLS i hasło aplikacji), login, hasło i adres nadawcy. Zapisz, wyślij **testowy e-mail**, a gdy dojdzie – zaznacz *Wysyłaj powiadomienia e-mail* i zapisz ponownie. Serwer wewnętrzny z własnym certyfikatem: odznacz *Sprawdzaj certyfikat serwera*.
+2. **Użytkownicy** – uzupełnij każdemu kontu e-mail i telefon. Osoby, które tylko odbierają powiadomienia, załóż z odznaczonym *Może logować się do panelu* (hasło niepotrzebne).
+3. **Grupy zgłoszeń › grupa › Odbiorcy powiadomień** – zaznacz SMS i/lub E-mail przy użytkownikach. Numery wpisane w grupie przed 4.6.0 są niżej jako *Dodatkowe numery spoza kont* i działają dalej; **Zamień na konto** tworzy konto z tym numerem i przenosi je do odbiorców.
+
+E-maile wysyła odbiornik (po SMS-ach, w każdym cyklu), więc musi działać – stan kolejki widać w Ustawienia › Poczta e-mail. Hasło SMTP jest w `data\config.json` (klucz `smtp`).
+
 ## 4. Zapomniane hasło administratora
 
 ```powershell

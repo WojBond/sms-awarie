@@ -2,7 +2,7 @@
 require __DIR__.'/_layout.php';
 if ($post) {
     $login = trim((string)($_POST['login'] ?? ''));
-    $q = $p->prepare('SELECT * FROM web_users WHERE login=? AND active=1');
+    $q = $p->prepare('SELECT * FROM web_users WHERE login=? AND active=1 AND login_enabled=1');
     $q->execute([$login]);
     $row = $q->fetch();
     if ($row && password_verify((string)($_POST['password'] ?? ''), $row['password_hash'])) {
