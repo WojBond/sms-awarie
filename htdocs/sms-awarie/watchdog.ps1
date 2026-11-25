@@ -5,7 +5,7 @@ $ErrorActionPreference='Stop'
 if(-not $Php){$Php=Join-Path (Split-Path (Split-Path $Root -Parent) -Parent) 'php\php.exe'}
 $data=Join-Path $Root 'data'; $logs=Join-Path $Root 'logs'; $receiver=Join-Path $Root 'receiver.php'
 New-Item -ItemType Directory -Force -Path $data,$logs | Out-Null
-$statePath=Join-Path $data 'watchdog-state.json'; $events=Join-Path $logs 'watchdog-events.jsonl'; $log=Join-Path $logs 'watchdog.log'; $hbPath=Join-Path $data 'heartbeat.json'; $pausePath=Join-Path $data 'watchdog.pause'
+$statePath=Join-Path $data 'watchdog-state.json'; $events=Join-Path $logs 'watchdog-events.jsonl'; $log=Join-Path $logs 'watchdog.log'; $hbPath=Join-Path $data 'heartbeat.json'; $pausePath=Join-Path $data 'watchdog.pause'; $stopPath=Join-Path $data 'receiver.stop'
 $mutex=New-Object System.Threading.Mutex($false,'Global\SMSAwarieV3Watchdog'); $owned=$false
 function Rotate-Log([string]$path,[long]$maxBytes=5MB) { if((Test-Path -LiteralPath $path) -and (Get-Item -LiteralPath $path).Length -gt $maxBytes){ Move-Item -LiteralPath $path -Destination "$path.1" -Force } }
 function Save-State($s) { $tmp="$statePath.$PID.tmp"; $s | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $tmp -Encoding UTF8; Move-Item -LiteralPath $tmp -Destination $statePath -Force }
@@ -29,6 +29,8 @@ try {
  if(Test-Path $statePath){try{$old=Get-Content $statePath -Raw|ConvertFrom-Json; foreach($k in @($s.Keys)){if($null -ne $old.$k){$s[$k]=$old.$k}}}catch{Event 'ERROR' 'Corrupt watchdog state; automatic restart disabled';exit 2}}
  $s.checked=[DateTimeOffset]::UtcNow.ToString('o')
  if(Test-Path $pausePath){$s.status='PAUSED';Save-State $s;exit 0}
+ # 4.4.0: odbiornik zatrzymany w panelu (Ustawienia > Uslugi) - nie uruchamiaj go ponownie.
+ if(Test-Path $stopPath){$s.status='RECEIVER_STOPPED';Save-State $s;exit 0}
  if(!(Test-Path $Php) -or !(Test-Path $receiver)){Event 'ERROR' 'PHP or receiver.php missing';$s.status='ERROR';Save-State $s;exit 2}
  $workers=@(Find-Workers)
  $age=$null;$hbState='MISSING';$hbPid=0;$hbPhase='unknown'

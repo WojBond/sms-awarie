@@ -32,6 +32,8 @@ ob_start(); ?>
       <p>Pamięć SMS modemu: <strong class="<?= $full ? 'txt-red' : '' ?>"><?= (int)$modem['inbox'] ?> / <?= (int)$modem['max'] ?></strong></p>
     <?php endif; ?>
     <?php if (is_admin($u)): ?>
+      <?php $stopped = array_filter(['odbiornik zatrzymany' => 'receiver.stop', 'Watchdog wstrzymany' => 'watchdog.pause', 'kopia zapasowa wstrzymana' => 'backup.pause'], fn($f) => is_file(DATA_DIR.'/'.$f)); ?>
+      <?php if ($stopped): ?><p class="flash flash-err">Usługi: <?= h(implode(', ', array_keys($stopped))) ?>. <a href="<?= h(url('services')) ?>">Ustawienia › Usługi</a></p><?php endif; ?>
       <?php if (is_array($wd)): ?>
         <p>Watchdog: <?= badge((string)($wd['status'] ?? 'UNKNOWN')) ?> · ostatnia kontrola <?= h(fmt_dt($wd['checked'] ?? '')) ?> · restarty w ostatniej godzinie: <?= count((array)($wd['restartHistory'] ?? [])) ?> / 3</p>
         <?php if (!empty($wd['lastProblem'])): ?><p class="muted">Ostatni problem: <?= h($wd['lastProblem']) ?></p><?php endif; ?>

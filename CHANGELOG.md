@@ -1,5 +1,12 @@
 # Changelog SMS-Awarie
 
+## 4.4.0 – 2026-11-25 (minor)
+- **Ustawienia › Usługi** (nowe podmenu): stan odbiornika, Watchdoga i kopii zapasowej z przyciskami Zatrzymaj/Uruchom (odbiornik) i Wstrzymaj/Wznów (Watchdog, backup). Działa bez uprawnień administratora – przez pliki `data\receiver.stop`, `data\watchdog.pause`, `data\backup.pause`.
+- **Zatrzymaj wszystko / Wznów wszystko** – jedno kliknięcie przed i po aktualizacji. Panel czeka do 25 s, aż odbiornik potwierdzi zatrzymanie.
+- Odbiornik sprawdza `receiver.stop` co sekundę w przerwach i kończy pracę tylko między krokami (heartbeat `STOPPED`); nie startuje, gdy plik istnieje. Watchdog nie uruchamia zatrzymanego odbiornika (stan `RECEIVER_STOPPED`), a `backup.php` pomija kopię przy `backup.pause`.
+- Zadania `SMS-Awarie-*` z Harmonogramu zadań Windows: stan, ostatnie i następne uruchomienie, konto, **Wyłącz/Włącz w Harmonogramie** i **Uruchom teraz** (PowerShell; bez uprawnień administratora panel podaje polecenie do uruchomienia ręcznie). Po wznowieniu panel próbuje od razu uruchomić Watchdoga.
+- Dashboard ostrzega, gdy któraś usługa jest zatrzymana; czytelne nazwy stanów Watchdoga (Wstrzymany, Uruchamia się, Brak odpowiedzi…).
+
 ## 4.3.1 – 2026-11-25 (patch)
 - **Naprawiony błąd krytyczny odbiornika** `db(): Argument #1 ($s) must be of type ?array, string given` (receiver.php:118). Występował, gdy po aktualizacji do 4.2+ został stary `receiver.php` z 4.0–4.1 (`db('sqlite', $cfg)`), a odbiornik był uruchamiany ponownie, np. przez Watchdog po restarcie routera. `db()` przyjmuje teraz także dawne wywołanie; ustawienia bazy i tak pochodzą z `config.json`.
 - **Ponowne połączenie z modemem Huawei po restarcie routera:** brak odpowiedzi modemu, błąd HTTP i wygasła sesja (API 125002, 125003, 100003) to stan `MODEM_OFFLINE` – odbiornik zamyka sesję, ponawia logowanie co 15 s, potem co 30 i 60 s, i zapisuje w logu `[MODEM] Polaczenie przywrocone po N s`. Limit czasu nawiązania połączenia 5 s.
