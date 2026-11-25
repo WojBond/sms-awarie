@@ -1,5 +1,12 @@
 # Changelog SMS-Awarie
 
+## 4.5.0 – 2026-11-25 (minor)
+- **Uprawnienia per grupa zgłoszeń** dla ról Operator i Tylko odczyt. W Użytkownicy każde konto ma zakres: *Wszystkie grupy, także nowe* z jednym poziomem albo *Tylko wybrane grupy* z poziomem osobno dla każdej grupy. To samo dla jednej grupy na jej stronie: Ustawienia grupy › **Uprawnienia użytkowników**.
+- Poziomy: **Podgląd** (zgłoszenia, statystyki, SMS-y grupy), **Obsługa zgłoszeń** (zmiana statusu i opisu), **Obsługa i obiekty** (dodatkowo dodawanie i wyłączanie obiektów grupy, np. pojazdów). Rola Tylko odczyt ma zawsze najwyżej Podgląd; Administrator ma pełny dostęp.
+- Uprawnienia dodatkowe konta: **Wysyłka i anulowanie SMS** oraz **SMS-y nieprzypisane do grup** (niepoprawne SMS-y, wysyłki ręczne i testowe).
+- Filtrowanie po stronie serwera: menu Grupy zgłoszeń, Dashboard (liczniki, otwarte zgłoszenia, wysyłki do weryfikacji), Zgłoszenia i eksport CSV, lista i strona grupy, SMS odebrane (po zgłoszeniu z SMS-a), SMS wychodzące (po powiadomieniu zgłoszenia). Zapis zgłoszenia, pojazdu i wysyłka są sprawdzane także przy bezpośrednim wywołaniu.
+- Schemat bazy v4 (SQLite i MS SQL, migracja automatyczna): kolumny `web_users.groups_all`, `can_send`, `see_unassigned` i tabela `user_group_access`; kopiowanie między bazami obejmuje uprawnienia. Istniejące konta dostają *Wszystkie grupy* z dotychczasowym zakresem, więc po aktualizacji nic się nie zmienia, dopóki administrator nie zawęzi dostępu.
+
 ## 4.4.0 – 2026-11-25 (minor)
 - **Ustawienia › Usługi** (nowe podmenu): stan odbiornika, Watchdoga i kopii zapasowej z przyciskami Zatrzymaj/Uruchom (odbiornik) i Wstrzymaj/Wznów (Watchdog, backup). Działa bez uprawnień administratora – przez pliki `data\receiver.stop`, `data\watchdog.pause`, `data\backup.pause`.
 - **Zatrzymaj wszystko / Wznów wszystko** – jedno kliknięcie przed i po aktualizacji. Panel czeka do 25 s, aż odbiornik potwierdzi zatrzymanie.

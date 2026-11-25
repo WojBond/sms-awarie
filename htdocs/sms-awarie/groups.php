@@ -1,6 +1,6 @@
 <?php
 // Wersja schematu bazy. Podnies przy kazdej zmianie DDL; migracje uruchamiaja sie raz.
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 function ensureSchema(PDO $p): void {
     if(schema_version($p)>=SCHEMA_VERSION) return;
     if(db_is_mssql($p)){
@@ -21,8 +21,19 @@ function ensureSchema(PDO $p): void {
         if(!hasColumn($p,'tickets','seq'))$p->exec('ALTER TABLE tickets ADD COLUMN seq INTEGER');
         if(!hasColumn($p,'web_users','active'))$p->exec('ALTER TABLE web_users ADD COLUMN active INTEGER NOT NULL DEFAULT 1');
     }
+    accessSchema($p);
     groupsSeed($p);
     set_schema_version($p,SCHEMA_VERSION);
+}
+// v4 (4.5.0): uprawnienia uzytkownikow do grup zgloszen (obie bazy).
+// web_users.groups_all: poziom dla wszystkich grup (view/handle/manage) albo '' = tylko grupy z user_group_access.
+// Domyslnie 'manage' + wysylka + SMS nieprzypisane = dotychczasowe zachowanie istniejacych kont.
+function accessSchema(PDO $p): void {
+    $ms=db_is_mssql($p);
+    $add=['groups_all'=>$ms?"NVARCHAR(16) NOT NULL DEFAULT 'manage'":"TEXT NOT NULL DEFAULT 'manage'",'can_send'=>'INT NOT NULL DEFAULT 1','see_unassigned'=>'INT NOT NULL DEFAULT 1'];
+    foreach($add as $col=>$def) if(!hasColumn($p,'web_users',$col)) $p->exec('ALTER TABLE web_users ADD '.($ms?'':'COLUMN ').$col.' '.$def);
+    if($ms) $p->exec("IF OBJECT_ID(N'dbo.user_group_access', N'U') IS NULL CREATE TABLE dbo.user_group_access (user_id NVARCHAR(64) NOT NULL REFERENCES web_users(id), group_id NVARCHAR(64) NOT NULL REFERENCES incident_groups(id), level NVARCHAR(16) NOT NULL, PRIMARY KEY(user_id,group_id))");
+    else $p->exec('CREATE TABLE IF NOT EXISTS user_group_access (user_id TEXT NOT NULL REFERENCES web_users(id), group_id TEXT NOT NULL REFERENCES incident_groups(id), level TEXT NOT NULL, PRIMARY KEY(user_id,group_id))');
 }
 // SMS-Awarie v3.1: tabele grup (SQLite).
 function groupsSchema(PDO $p): void {

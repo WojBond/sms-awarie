@@ -73,6 +73,21 @@ Po zmianie ustawień modemu zrestartuj odbiornik: **Ustawienia › Usługi › O
 
 Flagi przetrwają aktualizację i restart serwera. Dashboard przypomina, gdy któraś usługa jest zatrzymana.
 
+## 3b. Uprawnienia użytkowników do grup zgłoszeń (od 4.5.0)
+
+Użytkownicy › konto › **Dostęp do grup zgłoszeń** (Operator i Tylko odczyt; Administrator ma zawsze pełny dostęp):
+
+- **Wszystkie grupy, także nowe** – jeden poziom dla każdej grupy (tak działają konta sprzed 4.5.0).
+- **Tylko wybrane grupy** – poziom osobno dla każdej grupy; nowa grupa nie jest widoczna, dopóki administrator jej nie przydzieli (także na stronie grupy: Ustawienia grupy › Uprawnienia użytkowników).
+
+| Poziom | Co może |
+|---|---|
+| Podgląd | zgłoszenia, statystyki i SMS-y grupy, eksport CSV |
+| Obsługa zgłoszeń | + zmiana statusu i opisu zgłoszeń |
+| Obsługa i obiekty | + dodawanie i wyłączanie obiektów grupy (np. pojazdów) |
+
+Rola Tylko odczyt ma najwyżej Podgląd. Dodatkowo: **Wysyłka i anulowanie SMS** (Nowy SMS, Anuluj w SMS wychodzących) i **SMS-y nieprzypisane do grup** (niepoprawne SMS-y, wysyłki ręczne).
+
 ## 4. Zapomniane hasło administratora
 
 ```powershell

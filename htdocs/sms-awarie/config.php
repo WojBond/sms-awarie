@@ -1,7 +1,14 @@
 <?php
 // SMS-Awarie - wersja, changelog, strefa czasowa i sciezki. Jedno zrodlo prawdy dla numeru wersji.
-define('APP_VERSION', '4.4.0');
+define('APP_VERSION', '4.5.0');
 const APP_CHANGELOG = [
+    '4.5.0' => [
+        'Uprawnienia Operatora i Tylko odczyt z podzialem na grupy zgloszen: wszystkie grupy z wybranym poziomem albo tylko wybrane grupy.',
+        'Poziomy w grupie: Podglad, Obsluga zgloszen (status i opis), Obsluga i obiekty (np. dodawanie i wylaczanie pojazdow). Tylko odczyt ma zawsze najwyzej Podglad.',
+        'Menu, Dashboard, Zgloszenia (z eksportem CSV), Grupy, SMS odebrane i wychodzace pokazuja tylko dozwolone grupy; akcje sprawdzane po stronie serwera.',
+        'Uprawnienia dodatkowe konta: wysylka i anulowanie SMS oraz podglad SMS-ow nieprzypisanych do grup.',
+        'Ustawianie uprawnien w Uzytkownicy (per konto) i na stronie grupy (Uprawnienia uzytkownikow). Istniejace konta zachowuja dotychczasowy dostep do wszystkich grup.',
+    ],
     '4.4.0' => [
         'Nowa strona Ustawienia > Uslugi: stan odbiornika, Watchdoga i kopii zapasowej z przyciskami Zatrzymaj/Uruchom i Wstrzymaj/Wznow.',
         'Przycisk "Zatrzymaj wszystko" przed aktualizacja (odbiornik konczy biezacy krok i sie zatrzymuje, Watchdog i backup wstrzymane) oraz "Wznow wszystko".',

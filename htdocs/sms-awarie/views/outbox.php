@@ -1,12 +1,15 @@
 <?php
 require __DIR__.'/_layout.php';
 
+[$of, $oa] = scope_filter($p, $u, 'outbox', 'o');
 if ($post) {
     $act = (string)($_POST['action'] ?? '');
+    // 4.5.0: wysylka i anulowanie tylko z uprawnieniem "Wysylka SMS"; anulowanie w zakresie widocznych wiadomosci.
+    if (!can_send($u)) { flash('Brak uprawnień do wysyłki SMS.', 'err'); redirect('outbox'); }
     if ($act === 'cancel') {
         $id = (string)($_POST['id'] ?? '');
-        $q = $p->prepare("UPDATE outbox SET status='ANULOWANY' WHERE id=? AND status='OCZEKUJE'");
-        $q->execute([$id]);
+        $q = $p->prepare("UPDATE outbox SET status='ANULOWANY' WHERE id=? AND status='OCZEKUJE' AND id IN (SELECT o.id FROM outbox o WHERE o.id=?".($of !== '' ? " AND $of" : '').')');
+        $q->execute(array_merge([$id, $id], $oa));
         if ($q->rowCount()) { audit($p, $u, 'outbox:cancel', $id); flash('Anulowano SMS.'); }
         else flash('SMS został już wysłany lub anulowany.', 'err');
     } elseif ($act === 'send') {
@@ -28,15 +31,16 @@ if ($post) {
 $f = ['status' => (string)($_GET['status'] ?? ''), 'q' => trim((string)($_GET['q'] ?? ''))];
 $where = [];
 $args = [];
-if ($f['status'] !== '') { $where[] = 'status=?'; $args[] = $f['status']; }
-if ($f['q'] !== '') { $where[] = '(phone LIKE ? OR content LIKE ?)'; array_push($args, "%{$f['q']}%", "%{$f['q']}%"); }
+if ($of !== '') { $where[] = $of; $args = $oa; }
+if ($f['status'] !== '') { $where[] = 'o.status=?'; $args[] = $f['status']; }
+if ($f['q'] !== '') { $where[] = '(o.phone LIKE ? OR o.content LIKE ?)'; array_push($args, "%{$f['q']}%", "%{$f['q']}%"); }
 $w = $where ? ' WHERE '.implode(' AND ', $where) : '';
-$total = (int)one($p, "SELECT COUNT(*) FROM outbox$w", $args);
-$list = rows($p, "SELECT id,phone,content,status,created,detail FROM outbox$w ORDER BY created DESC".sql_page($p, PER_PAGE, (page_no() - 1) * PER_PAGE), $args);
+$total = (int)one($p, "SELECT COUNT(*) FROM outbox o$w", $args);
+$list = rows($p, "SELECT o.id,o.phone,o.content,o.status,o.created,o.detail FROM outbox o$w ORDER BY o.created DESC".sql_page($p, PER_PAGE, (page_no() - 1) * PER_PAGE), $args);
 
 layout_start($title, $u, $page);
 ?>
-<?php if (can_write($u)): ?>
+<?php if (can_send($u)): ?>
 <details class="card">
   <summary><strong>Nowy SMS</strong></summary>
   <form method="post" action="<?= h(url('outbox')) ?>">
@@ -59,7 +63,7 @@ layout_start($title, $u, $page);
 <tbody>
 <?php foreach ($list as $r): ?>
   <tr><td><?= h(fmt_dt($r['created'])) ?></td><td><?= h($r['phone']) ?></td><td><?= h($r['content']) ?></td><td><?= badge($r['status']) ?></td><td><?= h($r['detail']) ?></td>
-  <td><?php if (can_write($u) && $r['status'] === 'OCZEKUJE'): ?><form method="post" action="<?= h(url('outbox')) ?>" data-confirm="Anulować ten SMS?"><?= csrf_field() ?><input type="hidden" name="action" value="cancel"><input type="hidden" name="id" value="<?= h($r['id']) ?>"><button class="btn btn-o">Anuluj</button></form><?php endif; ?></td></tr>
+  <td><?php if (can_send($u) && $r['status'] === 'OCZEKUJE'): ?><form method="post" action="<?= h(url('outbox')) ?>" data-confirm="Anulować ten SMS?"><?= csrf_field() ?><input type="hidden" name="action" value="cancel"><input type="hidden" name="id" value="<?= h($r['id']) ?>"><button class="btn btn-o">Anuluj</button></form><?php endif; ?></td></tr>
 <?php endforeach; ?>
 <?php if (!$list): ?><tr><td colspan="6" class="muted">Brak wiadomości.</td></tr><?php endif; ?>
 </tbody></table></div>
