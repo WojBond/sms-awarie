@@ -6,7 +6,7 @@ $audit = rows($p, 'SELECT created,actor,action,target FROM web_audit ORDER BY id
 $receiver = array_merge(tailLines(LOG_DIR.'/receiver-stderr.log', 20), tailLines(LOG_DIR.'/receiver-stdout.log', 100));
 $events = [];
 foreach (array_reverse(tailLines(LOG_DIR.'/watchdog-events.jsonl', 30)) as $line) {
-    $e = json_decode($line, true);
+    $e = json_decode(strip_bom($line), true);
     if (is_array($e) && isset($e['event'], $e['time'])) $events[] = $e;
 }
 

@@ -48,7 +48,7 @@ if ($post) {
 
 $hb = heartbeat();
 $recv = receiver_display_state($hb);
-$wd = @json_decode((string)@file_get_contents(DATA_DIR.'/watchdog-state.json'), true);
+$wd = watchdog_state();
 $flags = [];
 foreach (array_keys(SERVICE_FLAGS) as $k) $flags[$k] = service_flag($k);
 $tasks = scheduler_tasks();
@@ -67,6 +67,18 @@ function task_block($tasks, string $name, bool $runButton): void {
     task_button($name, $disabled ? 'enable' : 'disable', $disabled ? 'Włącz w Harmonogramie' : 'Wyłącz w Harmonogramie', true);
     if ($runButton && !$disabled) task_button($name, 'run', 'Uruchom teraz', true);
     echo '</div>';
+}
+// Podpowiedz, gdy Watchdog nie zapisuje stanu (HTML, tresc stala).
+function watchdog_hint(string $status, $tasks): string {
+    if (!in_array($status, ['NO_DATA', 'SILENT', 'UNREADABLE'], true)) return '';
+    if ($status === 'UNREADABLE') return 'Plik <code>data\\watchdog-state.json</code> jest nieczytelny. Usuń go – Watchdog zapisze nowy przy następnym uruchomieniu (co minutę).';
+    $name = SERVICE_FLAGS['watchdog']['task'];
+    $t = is_array($tasks) ? ($tasks[$name] ?? null) : null;
+    $what = $status === 'NO_DATA' ? 'Watchdog jeszcze nie zapisał swojego stanu' : 'Watchdog nie sprawdzał odbiornika od ponad 5 minut';
+    if (is_array($tasks) && !$t) return h($what).'. Zadanie <code>'.h($name).'</code> nie jest zarejestrowane – uruchom w PowerShell jako administrator <code>scripts\\install-watchdog-task.ps1</code>.';
+    if ($t && $t['state'] === 'Disabled') return h($what).'. Zadanie jest wyłączone w Harmonogramie – kliknij „Włącz w Harmonogramie”.';
+    if ($t && $t['last'] && (int)$t['result'] !== 0) return h($what).'. Ostatnie uruchomienie zadania zakończyło się kodem '.h((string)$t['result']).' – sprawdź konto zadania, ścieżkę do <code>watchdog.ps1</code> i plik <code>logs\\watchdog.log</code>.';
+    return h($what).'. Sprawdź w Harmonogramie zadań, czy zadanie <code>'.h($name).'</code> uruchamia się co minutę, i plik <code>logs\\watchdog.log</code>.';
 }
 function task_button(string $name, string $op, string $label, bool $outline): void {
     echo '<form method="post" action="'.h(url('services')).'" class="inline">'.csrf_field()
@@ -107,8 +119,10 @@ layout_start($title, $u, $page);
 
 <section class="card">
   <h2>Watchdog</h2>
-  <p>Stan: <?= $flags['watchdog'] ? badge('PAUSED') : badge((string)($wd['status'] ?? 'UNKNOWN')) ?><?php if (!empty($wd['checked'])): ?> <small class="muted">ostatnia kontrola <?= h(fmt_dt($wd['checked'])) ?></small><?php endif; ?></p>
+  <p>Stan: <?= $flags['watchdog'] ? badge('PAUSED') : badge($wd['status']) ?><?php if ($wd['checked'] !== ''): ?> <small class="muted">ostatnia kontrola <?= h(fmt_dt($wd['checked'])) ?></small><?php endif; ?></p>
   <?= since($flags['watchdog']) ?>
+  <?php if (!$flags['watchdog'] && ($hint = watchdog_hint($wd['status'], $tasks))): ?><p class="flash flash-err"><?= $hint ?></p><?php endif; ?>
+  <?php if (!empty($wd['raw']['lastProblem'])): ?><p class="muted">Ostatni problem: <?= h((string)$wd['raw']['lastProblem']) ?></p><?php endif; ?>
   <p class="muted">Co minutę sprawdza odbiornik i uruchamia go ponownie po awarii (maks. 3 razy na godzinę).</p>
   <div class="actions"><?php $flags['watchdog'] ? flag_button('watchdog', false, 'Wznów') : flag_button('watchdog', true, 'Wstrzymaj'); ?></div>
   <?php task_block($tasks, SERVICE_FLAGS['watchdog']['task'], true); ?>

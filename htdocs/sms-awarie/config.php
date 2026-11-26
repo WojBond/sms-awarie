@@ -1,7 +1,12 @@
 <?php
 // SMS-Awarie - wersja, changelog, strefa czasowa i sciezki. Jedno zrodlo prawdy dla numeru wersji.
-define('APP_VERSION', '4.6.0');
+define('APP_VERSION', '4.6.1');
 const APP_CHANGELOG = [
+    '4.6.1' => [
+        'Poprawka: stan Watchdoga byl zawsze "Nieznany" (Ustawienia > Uslugi) i "Brak danych Watchdoga" na Dashboardzie. Windows PowerShell 5.1 zapisywal plik stanu z BOM UTF-8, ktorego PHP nie odczytywal.',
+        'Watchdog zapisuje stan i dzienniki w UTF-8 bez BOM; panel czyta takze stare pliki z BOM (rowniez liste zdarzen w Logach).',
+        'Nowe stany Watchdoga: "Brak danych - nie uruchomil sie" (brak pliku stanu) i "Nie dziala - brak kontroli" (ostatnia kontrola starsza niz 5 min) z podpowiedzia, co sprawdzic w Harmonogramie zadan.',
+    ],
     '4.6.0' => [
         'Nowa strona Ustawienia > Poczta e-mail: konto SMTP do powiadomien (serwer, port, STARTTLS/SSL, login, haslo, nadawca), testowy e-mail z podgladem odpowiedzi serwera i lista ostatnich e-maili.',
         'Uzytkownicy maja adres e-mail i numer telefonu. Nowa opcja konta bez logowania - tylko do powiadomien (np. mechanik, serwis zewnetrzny).',
