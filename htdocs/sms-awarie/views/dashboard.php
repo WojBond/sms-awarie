@@ -20,7 +20,7 @@ $groupStats = rows($p, 'SELECT g.id,g.name,COUNT(tg.ticket_id) AS total FROM inc
 $open = rows($p, "SELECT t.id,t.plate,t.description,t.status,t.created,t.seq,COALESCE(g.name,'Pojazdy') AS group_name FROM tickets t LEFT JOIN ticket_groups tg ON tg.ticket_id=t.id LEFT JOIN incident_groups g ON g.id=tg.group_id WHERE t.status IN ('NOWE','WERYFIKACJA')$gw ORDER BY t.created DESC".sql_page($p, 10), $ga);
 $verify = rows($p, "SELECT o.phone,o.content,o.status,o.created,o.detail FROM outbox o WHERE o.status IN ('W_TRAKCIE','NIEPEWNY')$ow ORDER BY o.created DESC".sql_page($p, 20), $oa);
 $modem = $hb['raw']['modem'] ?? null;
-$wd = is_admin($u) ? @json_decode((string)@file_get_contents(DATA_DIR.'/watchdog-state.json'), true) : null;
+$wd = is_admin($u) ? watchdog_state() : null;
 
 // Odswiezany fragment (app.js pobiera ?p=dashboard&partial=1 co 10 s).
 ob_start(); ?>
@@ -41,10 +41,10 @@ ob_start(); ?>
     <?php if (is_admin($u)): ?>
       <?php $stopped = array_filter(['odbiornik zatrzymany' => 'receiver.stop', 'Watchdog wstrzymany' => 'watchdog.pause', 'kopia zapasowa wstrzymana' => 'backup.pause'], fn($f) => is_file(DATA_DIR.'/'.$f)); ?>
       <?php if ($stopped): ?><p class="flash flash-err">Usługi: <?= h(implode(', ', array_keys($stopped))) ?>. <a href="<?= h(url('services')) ?>">Ustawienia › Usługi</a></p><?php endif; ?>
-      <?php if (is_array($wd)): ?>
-        <p>Watchdog: <?= badge((string)($wd['status'] ?? 'UNKNOWN')) ?> · ostatnia kontrola <?= h(fmt_dt($wd['checked'] ?? '')) ?> · restarty w ostatniej godzinie: <?= count((array)($wd['restartHistory'] ?? [])) ?> / 3</p>
-        <?php if (!empty($wd['lastProblem'])): ?><p class="muted">Ostatni problem: <?= h($wd['lastProblem']) ?></p><?php endif; ?>
-      <?php else: ?><p class="muted">Brak danych Watchdoga.</p><?php endif; ?>
+      <?php if ($wd['status'] !== 'NO_DATA'): ?>
+        <p>Watchdog: <?= badge(is_file(DATA_DIR.'/watchdog.pause') ? 'PAUSED' : $wd['status']) ?> · ostatnia kontrola <?= h(fmt_dt($wd['checked'])) ?> · restarty w ostatniej godzinie: <?= count((array)($wd['raw']['restartHistory'] ?? [])) ?> / 3</p>
+        <?php if (!empty($wd['raw']['lastProblem'])): ?><p class="muted">Ostatni problem: <?= h((string)$wd['raw']['lastProblem']) ?></p><?php endif; ?>
+      <?php else: ?><p class="muted">Brak danych Watchdoga – zadanie w Harmonogramie jeszcze się nie uruchomiło. <a href="<?= h(url('services')) ?>">Ustawienia › Usługi</a></p><?php endif; ?>
     <?php endif; ?>
   </section>
   <section class="card">

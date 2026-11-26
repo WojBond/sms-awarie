@@ -6,7 +6,7 @@ require_once __DIR__.'/db.php';
 function config(){
     $defaults=['modem'=>'http://192.168.8.1','modempass'=>'','ack'=>false,'own_phone'=>'','ack_template'=>'','delete_after_import'=>true,'send_per_cycle'=>5];
     $file=DATA_DIR.'/config.json';
-    return array_merge($defaults,is_file($file)?json_decode(file_get_contents($file),true,512,JSON_THROW_ON_ERROR):[]);
+    return array_merge($defaults,is_file($file)?json_decode(preg_replace('/^\xEF\xBB\xBF/','',(string)file_get_contents($file)),true,512,JSON_THROW_ON_ERROR):[]);
 }
 // Zapis atomowy (plik tymczasowy + rename), bo odbiornik czyta config.json w kazdym cyklu.
 function saveconfig($c){

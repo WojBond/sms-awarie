@@ -1,5 +1,11 @@
 # Changelog SMS-Awarie
 
+## 4.6.1 – 2026-11-26 (patch)
+- **Poprawka: stan Watchdoga „Nieznany”.** `watchdog.ps1` zapisywał `data\watchdog-state.json` przez `Set-Content -Encoding UTF8`, a Windows PowerShell 5.1 dodaje wtedy na początku pliku BOM UTF-8. `json_decode()` w PHP zwracał `null`, więc Ustawienia › Usługi pokazywały *Nieznany*, a Dashboard *Brak danych Watchdoga*, choć Watchdog działał. To samo dotyczyło pierwszego wiersza `logs\watchdog-events.jsonl` (Logi).
+- Watchdog zapisuje stan, `watchdog-events.jsonl` i `watchdog.log` w UTF-8 bez BOM (`[IO.File]::WriteAllText/AppendAllText`). Panel usuwa BOM przy odczycie (`read_json()` / `strip_bom()` w `web/lib.php`), więc działa od razu, także ze starym plikiem stanu i z `data\config.json` zapisanym w Notatniku.
+- Nowe stany na Usługach i Dashboardzie: **Brak danych – nie uruchomił się** (brak pliku stanu) i **Nie działa – brak kontroli** (ostatnia kontrola starsza niż 5 min), z podpowiedzią: zadanie niezarejestrowane, wyłączone w Harmonogramie albo kończące się błędem.
+- Aktualizacja: skopiuj pliki (`scripts\install.ps1 -Apply`). Zadania Harmonogramu nie trzeba rejestrować ponownie.
+
 ## 4.6.0 – 2026-11-25 (minor)
 - **Ustawienia › Poczta e-mail** (nowe podmenu): konto SMTP do wysyłania powiadomień – serwer, port, szyfrowanie (STARTTLS / SSL/TLS / bez), login, hasło (puste pole = bez zmian), adres i nazwa nadawcy, weryfikacja certyfikatu, opcjonalny adres panelu (link w e-mailu). **Testowy e-mail** wysyłany od razu z panelu z przebiegiem rozmowy z serwerem (bez hasła). Lista ostatnich 20 e-maili, *Ponów e-maile z błędem*, *Anuluj oczekujące*. Klient SMTP w `mail.php`, bez bibliotek (wymaga `extension=openssl`, w XAMPP włączone).
 - **Użytkownicy:** pola **E-mail** i **Telefon** (normalizacja spacji i myślników, walidacja). Opcja **Może logować się do panelu** – odznaczona = konto tylko do powiadomień (bez hasła, nie da się na nie zalogować; plakietka *Tylko powiadomienia*). W koncie widać, z których grup dostaje powiadomienia. Zawsze zostaje co najmniej jeden administrator z logowaniem.

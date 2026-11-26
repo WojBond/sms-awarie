@@ -1,4 +1,4 @@
-﻿# SMS-Awarie - Watchdog v3; Windows PowerShell 5.1
+﻿# SMS-Awarie - Watchdog v3 (4.6.1); Windows PowerShell 5.1
 param([string]$Root=$PSScriptRoot,[string]$Php='',[int]$StaleSeconds=180,[int]$CooldownSeconds=300,[int]$MaxRestartsPerHour=3,[int]$GraceSeconds=90,[int]$StopWaitSeconds=20)
 $ErrorActionPreference='Stop'
 # <XAMPP>\htdocs\sms-awarie -> <XAMPP>\php\php.exe (XAMPP na dowolnym dysku)
@@ -8,11 +8,14 @@ New-Item -ItemType Directory -Force -Path $data,$logs | Out-Null
 $statePath=Join-Path $data 'watchdog-state.json'; $events=Join-Path $logs 'watchdog-events.jsonl'; $log=Join-Path $logs 'watchdog.log'; $hbPath=Join-Path $data 'heartbeat.json'; $pausePath=Join-Path $data 'watchdog.pause'; $stopPath=Join-Path $data 'receiver.stop'
 $mutex=New-Object System.Threading.Mutex($false,'Global\SMSAwarieV3Watchdog'); $owned=$false
 function Rotate-Log([string]$path,[long]$maxBytes=5MB) { if((Test-Path -LiteralPath $path) -and (Get-Item -LiteralPath $path).Length -gt $maxBytes){ Move-Item -LiteralPath $path -Destination "$path.1" -Force } }
-function Save-State($s) { $tmp="$statePath.$PID.tmp"; $s | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $tmp -Encoding UTF8; Move-Item -LiteralPath $tmp -Destination $statePath -Force }
+# 4.6.1: UTF-8 bez BOM - Set-Content/Add-Content -Encoding UTF8 w PowerShell 5.1 dopisuja BOM, przez ktory PHP nie czytal stanu (panel: "Nieznany").
+$utf8=New-Object System.Text.UTF8Encoding($false)
+function Save-State($s) { $tmp="$statePath.$PID.tmp"; [IO.File]::WriteAllText($tmp,($s | ConvertTo-Json -Depth 6),$utf8); Move-Item -LiteralPath $tmp -Destination $statePath -Force }
+function Append-Line([string]$path,[string]$line) { [IO.File]::AppendAllText($path,$line+"`r`n",$utf8) }
 function Event([string]$kind,[string]$detail,[int]$processId=0) {
  $now=[DateTimeOffset]::UtcNow.ToString('o'); $e=[ordered]@{time=$now;event=$kind;pid=$processId;detail=$detail};
- Add-Content -LiteralPath $events -Encoding UTF8 -Value ($e|ConvertTo-Json -Compress);
- Add-Content -LiteralPath $log -Encoding UTF8 -Value "$now $kind PID=$processId $detail";
+ Append-Line $events ($e|ConvertTo-Json -Compress);
+ Append-Line $log "$now $kind PID=$processId $detail";
  $script:s.lastEvent=$kind; $script:s.lastProblem=if($kind -in @('ERROR','STALE','RESTART_FAILED','RESTART_BLOCKED')){$detail}else{$script:s.lastProblem};
 }
 function Find-Workers {

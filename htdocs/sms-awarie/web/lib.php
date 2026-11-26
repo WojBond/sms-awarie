@@ -8,7 +8,8 @@ const STATUS_LABELS = TICKET_STATUSES + ['OCZEKUJE' => 'Oczekuje', 'W_TRAKCIE' =
     'NIEPEWNY' => 'Niepewny', 'ANULOWANY' => 'Anulowany', 'NIEPOPRAWNY' => 'Niepoprawny', 'BLAD' => 'Błąd', 'ERROR' => 'Błąd',
     'OFFLINE' => 'Offline', 'MODEM_OFFLINE' => 'Brak połączenia z modemem', 'RUNNING' => 'Działa', 'UNKNOWN' => 'Nieznany',
     'STOPPED' => 'Zatrzymany', 'STOPPING' => 'Zatrzymuje się', 'PAUSED' => 'Wstrzymany', 'RECEIVER_STOPPED' => 'Wstrzymany (odbiornik zatrzymany)', 'STARTING' => 'Uruchamia się',
-    'STALE' => 'Brak odpowiedzi', 'MULTIPLE' => 'Kilka odbiorników', 'PID_MISMATCH' => 'Niezgodny PID'];
+    'STALE' => 'Brak odpowiedzi', 'MULTIPLE' => 'Kilka odbiorników', 'PID_MISMATCH' => 'Niezgodny PID',
+    'NO_DATA' => 'Brak danych – nie uruchomił się', 'UNREADABLE' => 'Nieczytelny plik stanu', 'SILENT' => 'Nie działa – brak kontroli'];
 const PER_PAGE = 50;
 
 function h($v): string { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
@@ -129,7 +130,7 @@ function badge(string $status): string {
         'STARTING' => 'b-blue',
         'W_REALIZACJI' => 'b-violet',
         'ZAMKNIETE', 'PRZYJETY', 'WYSLANO', 'RUNNING' => 'b-green',
-        'NIEPOPRAWNY', 'BLAD', 'ERROR', 'OFFLINE', 'ANULOWANY', 'MULTIPLE', 'PID_MISMATCH' => 'b-red',
+        'NIEPOPRAWNY', 'BLAD', 'ERROR', 'OFFLINE', 'ANULOWANY', 'MULTIPLE', 'PID_MISMATCH', 'NO_DATA', 'UNREADABLE', 'SILENT' => 'b-red',
         default => 'b-grey',
     };
     $label = STATUS_LABELS[$status] ?? $status;
@@ -160,8 +161,37 @@ function csv_out(string $filename, array $header, iterable $rows): never {
     exit;
 }
 
+// Plik JSON jako tablica albo null. Usuwa BOM UTF-8 - Windows PowerShell 5.1 (Set-Content/Add-Content
+// -Encoding UTF8) dopisuje go na poczatku pliku, a json_decode() wtedy zwraca null.
+function strip_bom(string $s): string { return str_starts_with($s, "\xEF\xBB\xBF") ? substr($s, 3) : $s; }
+function read_json(string $file): ?array {
+    $raw = @file_get_contents($file);
+    if ($raw === false) return null;
+    $d = json_decode(strip_bom($raw), true);
+    return is_array($d) ? $d : null;
+}
+
+// Stan Watchdoga do wyswietlenia: ['status', 'checked', 'raw'].
+// NO_DATA - brak watchdog-state.json (zadanie nigdy nie zadzialalo), UNREADABLE - plik nieczytelny,
+// SILENT - ostatnia kontrola starsza niz 5 min (zadanie w Harmonogramie nie dziala), inaczej status z pliku.
+const WATCHDOG_SILENT_SECONDS = 300;
+function watchdog_state(): array {
+    $f = DATA_DIR.'/watchdog-state.json';
+    clearstatcache(true, $f);
+    if (!is_file($f)) return ['status' => 'NO_DATA', 'checked' => '', 'raw' => []];
+    $wd = read_json($f);
+    if ($wd === null) return ['status' => 'UNREADABLE', 'checked' => date('c', (int)filemtime($f)), 'raw' => []];
+    $checked = (string)($wd['checked'] ?? '');
+    $t = $checked !== '' ? strtotime($checked) : false;
+    if (!$t) $t = (int)filemtime($f);
+    $status = (string)($wd['status'] ?? '');
+    if ($status === '') $status = 'UNKNOWN';
+    if (time() - $t > WATCHDOG_SILENT_SECONDS) $status = 'SILENT';
+    return ['status' => $status, 'checked' => $checked !== '' ? $checked : date('c', $t), 'raw' => $wd];
+}
+
 function heartbeat(): array {
-    $hb = @json_decode((string)@file_get_contents(DATA_DIR.'/heartbeat.json'), true);
+    $hb = read_json(DATA_DIR.'/heartbeat.json');
     $fresh = is_array($hb) && time() - (int)($hb['time'] ?? 0) < 90;
     return ['state' => $fresh ? (string)($hb['state'] ?? 'UNKNOWN') : 'OFFLINE', 'raw' => is_array($hb) ? $hb : []];
 }

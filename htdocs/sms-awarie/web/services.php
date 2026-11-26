@@ -37,7 +37,7 @@ function wait_receiver_stopped(int $timeout = 25): bool {
     $start = time();
     do {
         clearstatcache();
-        $hb = @json_decode((string)@file_get_contents(DATA_DIR.'/heartbeat.json'), true);
+        $hb = read_json(DATA_DIR.'/heartbeat.json');
         if (!is_array($hb) || time() - (int)($hb['time'] ?? 0) > 90) return true;
         if (($hb['state'] ?? '') === 'STOPPED') return true;
         if (time() - $start >= $timeout) return false;
@@ -95,7 +95,7 @@ $r=@(Get-ScheduledTask -TaskName 'SMS-Awarie*' -ErrorAction SilentlyContinue | F
 ConvertTo-Json -InputObject $r -Compress -Depth 3
 PS);
     if ($code !== 0) return 'Nie udało się odczytać Harmonogramu zadań: '.($err ?: 'kod '.$code);
-    $list = json_decode($out ?: '[]', true);
+    $list = json_decode(strip_bom($out ?: '[]'), true);
     if (!is_array($list)) return 'Nieczytelna odpowiedź Harmonogramu zadań.';
     if (isset($list['name'])) $list = [$list];
     $tasks = [];
