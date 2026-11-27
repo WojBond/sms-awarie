@@ -49,4 +49,41 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelectorAll('.side nav a').forEach(function (a) {
     a.addEventListener('click', function () { if (navt) navt.checked = false; });
   });
+  // Klawisz Esc zamyka wysuniete menu na telefonie.
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && navt && navt.checked) navt.checked = false;
+  });
+
+  // 4.7.0: zwijanie menu bocznego na PC do paska ikon; stan zapamietany w przegladarce.
+  var root = document.documentElement, toggle = document.querySelector('.side-toggle');
+  var wide = window.matchMedia('(min-width: 1000px)');
+  function railTips(on) {
+    document.querySelectorAll('.side nav a, .side .sub > summary').forEach(function (el) {
+      if (on) el.setAttribute('title', el.textContent.trim()); else el.removeAttribute('title');
+    });
+  }
+  function setMin(min) {
+    root.classList.toggle('side-min', min);
+    if (toggle) {
+      var t = min ? 'Rozwiń menu' : 'Zwiń menu';
+      toggle.setAttribute('aria-expanded', min ? 'false' : 'true');
+      toggle.setAttribute('aria-label', t);
+      toggle.title = t;
+    }
+    railTips(min);
+    try { localStorage.setItem('sms-awarie-side', min ? 'min' : ''); } catch (e) { /* tryb prywatny */ }
+  }
+  if (toggle) {
+    setMin(root.classList.contains('side-min'));
+    toggle.addEventListener('click', function () { setMin(!root.classList.contains('side-min')); });
+  }
+  // W pasku ikon klikniecie podmenu (Grupy, Ustawienia) rozwija menu i to podmenu.
+  document.querySelectorAll('.side .sub > summary').forEach(function (s) {
+    s.addEventListener('click', function (e) {
+      if (!root.classList.contains('side-min') || !wide.matches) return;
+      e.preventDefault();
+      s.parentNode.open = true;
+      setMin(false);
+    });
+  });
 });

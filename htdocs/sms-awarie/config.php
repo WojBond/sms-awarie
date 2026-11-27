@@ -1,7 +1,12 @@
 <?php
 // SMS-Awarie - wersja, changelog, strefa czasowa i sciezki. Jedno zrodlo prawdy dla numeru wersji.
-define('APP_VERSION', '4.6.1');
+define('APP_VERSION', '4.7.0');
 const APP_CHANGELOG = [
+    '4.7.0' => [
+        'Menu boczne mozna zwinac na PC przyciskiem obok nazwy SMS-Awarie: zostaje waski pasek ikon (podpowiedz z nazwa po najechaniu), a glowne okno automatycznie poszerza sie na zwolnione miejsce. Stan menu jest zapamietany w przegladarce.',
+        'W pasku ikon klikniecie Grup zgloszen lub Ustawien rozwija menu z podmenu; wyroznione jest aktywne miejsce.',
+        'Telefon / Zebra: wysuwane menu ma przycisk zamkniecia (X), zamyka sie tez klawiszem Esc. Lista zmian w stopce menu nie jest juz przycinana na PC.',
+    ],
     '4.6.1' => [
         'Poprawka: stan Watchdoga byl zawsze "Nieznany" (Ustawienia > Uslugi) i "Brak danych Watchdoga" na Dashboardzie. Windows PowerShell 5.1 zapisywal plik stanu z BOM UTF-8, ktorego PHP nie odczytywal.',
         'Watchdog zapisuje stan i dzienniki w UTF-8 bez BOM; panel czyta takze stare pliki z BOM (rowniez liste zdarzen w Logach).',

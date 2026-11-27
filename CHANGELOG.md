@@ -1,5 +1,12 @@
 # Changelog SMS-Awarie
 
+## 4.7.0 – 2026-11-27 (minor)
+- **Chowane menu boczne (PC, ekran od 1000 px):** przycisk obok nazwy *SMS-Awarie* zwija menu do wąskiego paska ikon (72 px) i z powrotem. Główne okno automatycznie zajmuje zwolnione miejsce (margines i maksymalna szerokość treści liczone od szerokości menu, płynne przejście). Stan jest zapamiętany w przeglądarce (`localStorage`) i ustawiany przed narysowaniem strony, więc menu nie „mruga” przy przechodzeniu między stronami.
+- W pasku ikon: podpowiedź z nazwą pozycji po najechaniu, wyróżniona aktywna strona (także gdy jest w podmenu), kliknięcie *Grupy zgłoszeń* / *Ustawienia* rozwija menu razem z podmenu. W stopce zostają awatar, przycisk wylogowania (ikona) i plakietka wersji.
+- **Telefon / Zebra:** menu jak dotąd wysuwane przyciskiem *Menu*; doszedł przycisk zamknięcia (X) w nagłówku menu i zamykanie klawiszem Esc.
+- Lista zmian (plakietka wersji w stopce menu) otwiera się obok menu i nie jest już przycinana do jego szerokości.
+- Bez zmian w bazie i odbiorniku. Aktualizacja: skopiuj pliki (`scripts\install.ps1 -Apply`).
+
 ## 4.6.1 – 2026-11-26 (patch)
 - **Poprawka: stan Watchdoga „Nieznany”.** `watchdog.ps1` zapisywał `data\watchdog-state.json` przez `Set-Content -Encoding UTF8`, a Windows PowerShell 5.1 dodaje wtedy na początku pliku BOM UTF-8. `json_decode()` w PHP zwracał `null`, więc Ustawienia › Usługi pokazywały *Nieznany*, a Dashboard *Brak danych Watchdoga*, choć Watchdog działał. To samo dotyczyło pierwszego wiersza `logs\watchdog-events.jsonl` (Logi).
 - Watchdog zapisuje stan, `watchdog-events.jsonl` i `watchdog.log` w UTF-8 bez BOM (`[IO.File]::WriteAllText/AppendAllText`). Panel usuwa BOM przy odczycie (`read_json()` / `strip_bom()` w `web/lib.php`), więc działa od razu, także ze starym plikiem stanu i z `data\config.json` zapisanym w Notatniku.

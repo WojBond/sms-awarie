@@ -30,6 +30,8 @@ const NAV_ICONS = [
     'Ustawienia' => '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
     'logs' => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',
     'menu' => '<path d="M4 6h16M4 12h16M4 18h16"/>',
+    'collapse' => '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M16 9l-3 3 3 3"/>',
+    'close' => '<path d="M18 6 6 18M6 6l12 12"/>',
     'logout' => '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
     'brand' => '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M12 7v4M12 14h.01"/>',
 ];
@@ -37,7 +39,7 @@ function icon(string $key): string {
     return isset(NAV_ICONS[$key]) ? '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">'.NAV_ICONS[$key].'</svg>' : '';
 }
 function brand(): string {
-    return '<a class="brand" href="'.h(url('dashboard')).'"><span class="brand-mark">'.icon('brand').'</span>SMS-Awarie</a>';
+    return '<a class="brand" href="'.h(url('dashboard')).'"><span class="brand-mark">'.icon('brand').'</span><span class="lbl">SMS-Awarie</span></a>';
 }
 
 function nav_current(string $page, array $params): bool {
@@ -46,7 +48,7 @@ function nav_current(string $page, array $params): bool {
     return true;
 }
 function nav_link(array $i, bool $withIcon = true): string {
-    return '<a href="'.h(url($i[0], $i[2])).'"'.(nav_current($i[0], $i[2]) ? ' aria-current="page"' : '').'>'.($withIcon ? icon($i[0]) : '').h($i[1]).'</a>';
+    return '<a href="'.h(url($i[0], $i[2])).'"'.(nav_current($i[0], $i[2]) ? ' aria-current="page"' : '').'>'.($withIcon ? icon($i[0]) : '').'<span class="lbl">'.h($i[1]).'</span></a>';
 }
 
 function layout_start(string $title, ?array $u, string $page): void {
@@ -59,6 +61,9 @@ function layout_start(string $title, ?array $u, string $page): void {
 <title><?= h($title) ?> · SMS-Awarie</title>
 <link rel="stylesheet" href="<?= asset('assets/css/app.css') ?>">
 <script src="<?= asset('assets/js/app.js') ?>" defer></script>
+<script>/* 4.7.0: stan menu bocznego (zwiniete/rozwiniete) przed narysowaniem strony - bez migniecia */
+document.documentElement.className += ' js';
+try { if (localStorage.getItem('sms-awarie-side') === 'min') document.documentElement.className += ' side-min'; } catch (e) {}</script>
 </head>
 <body<?= $u ? ' class="with-side"' : '' ?>>
 <?php if ($u): ?>
@@ -68,8 +73,12 @@ function layout_start(string $title, ?array $u, string $page): void {
   <?= brand() ?>
 </header>
 <label for="navt" class="side-shade" aria-hidden="true"></label>
-<aside class="side">
-  <?= brand() ?>
+<aside class="side" id="side">
+  <div class="side-head">
+    <?= brand() ?>
+    <button type="button" class="side-toggle" aria-controls="side" aria-expanded="true" aria-label="Zwiń menu" title="Zwiń menu"><?= icon('collapse') ?></button>
+    <label for="navt" class="side-close" role="button" aria-label="Zamknij menu" title="Zamknij menu"><?= icon('close') ?></label>
+  </div>
   <nav aria-label="Menu główne">
   <?php foreach (nav_items($u) as $i): if ($i[3] === 'admin' && !is_admin($u)) continue; ?>
     <?php if ($i[0] !== null): echo nav_link($i); else:
@@ -84,7 +93,7 @@ function layout_start(string $title, ?array $u, string $page): void {
   <div class="side-foot">
     <span class="avatar" aria-hidden="true"><?= h(mb_substr($u['login'], 0, 1)) ?></span>
     <span class="who"><strong><?= h($u['login']) ?></strong><small><?= h(ROLES[$u['role']] ?? $u['role']) ?></small></span>
-    <form method="post" action="<?= h(url('logout')) ?>" class="inline"><?= csrf_field() ?><button class="btn btn-o"><?= icon('logout') ?>Wyloguj</button></form>
+    <form method="post" action="<?= h(url('logout')) ?>" class="inline"><?= csrf_field() ?><button class="btn btn-o" title="Wyloguj"><?= icon('logout') ?><span class="lbl">Wyloguj</span></button></form>
     <?php version_badge(); ?>
   </div>
 </aside>
