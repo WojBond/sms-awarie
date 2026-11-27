@@ -1,5 +1,12 @@
 # Changelog SMS-Awarie
 
+## 4.8.0 – 2026-11-27 (minor)
+- **Dwa tryby menu bocznego na PC**, wybierane przełącznikiem **Chowaj automatycznie** pod nazwą w menu bocznym:
+  1. **Automatyczny** (przełącznik włączony): menu jest wąskim paskiem ikon i rozwija się po najechaniu kursorem (po ok. 0,1 s), a chowa po zjechaniu (po ok. 0,35 s, żeby nie migało). Rozwinięte menu wysuwa się nad treścią, więc główne okno cały czas zostaje szerokie. Działa też z klawiatury (Tab) i na ekranach dotykowych (dotknięcie Grup zgłoszeń / Ustawień rozwija menu).
+  2. **Stały** (przełącznik wyłączony): menu cały czas zwinięte albo cały czas rozwinięte, przełączane przyciskiem obok nazwy *SMS-Awarie*, jak w 4.7.0.
+- Wybór trybu (i stan menu w trybie stałym) jest zapamiętany w przeglądarce i ustawiany przed narysowaniem strony. Gdy otwarta jest lista zmian z plakietki wersji, menu się nie chowa.
+- Telefon / Zebra bez zmian (menu wysuwane przyciskiem *Menu*). Bez zmian w bazie i odbiorniku. Aktualizacja: skopiuj pliki (`scripts\install.ps1 -Apply`).
+
 ## 4.7.0 – 2026-11-27 (minor)
 - **Chowane menu boczne (PC, ekran od 1000 px):** przycisk obok nazwy *SMS-Awarie* zwija menu do wąskiego paska ikon (72 px) i z powrotem. Główne okno automatycznie zajmuje zwolnione miejsce (margines i maksymalna szerokość treści liczone od szerokości menu, płynne przejście). Stan jest zapamiętany w przeglądarce (`localStorage`) i ustawiany przed narysowaniem strony, więc menu nie „mruga” przy przechodzeniu między stronami.
 - W pasku ikon: podpowiedź z nazwą pozycji po najechaniu, wyróżniona aktywna strona (także gdy jest w podmenu), kliknięcie *Grupy zgłoszeń* / *Ustawienia* rozwija menu razem z podmenu. W stopce zostają awatar, przycisk wylogowania (ikona) i plakietka wersji.

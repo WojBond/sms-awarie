@@ -54,36 +54,61 @@ document.addEventListener('DOMContentLoaded', function () {
     if (e.key === 'Escape' && navt && navt.checked) navt.checked = false;
   });
 
-  // 4.7.0: zwijanie menu bocznego na PC do paska ikon; stan zapamietany w przegladarce.
-  var root = document.documentElement, toggle = document.querySelector('.side-toggle');
+  // 4.7.0/4.8.0: menu boczne na PC. Tryby (zapamietane w przegladarce):
+  //   ''     - stale rozwiniete,  'min' - stale zwiniete do paska ikon (przycisk obok nazwy),
+  //   'auto' - pasek ikon, ktory rozwija sie nad trescia po najechaniu kursorem i chowa po zjechaniu.
+  var root = document.documentElement, side = document.querySelector('.side');
+  var toggle = document.querySelector('.side-toggle'), autoBox = document.getElementById('side-auto');
   var wide = window.matchMedia('(min-width: 1000px)');
+  var mode = root.classList.contains('side-auto') ? 'auto' : (root.classList.contains('side-min') ? 'min' : '');
+  var peekTimer = null;
   function railTips(on) {
     document.querySelectorAll('.side nav a, .side .sub > summary').forEach(function (el) {
       if (on) el.setAttribute('title', el.textContent.trim()); else el.removeAttribute('title');
     });
   }
-  function setMin(min) {
-    root.classList.toggle('side-min', min);
+  function peek(on, delay) {
+    clearTimeout(peekTimer);
+    if (mode !== 'auto') return;
+    peekTimer = setTimeout(function () { root.classList.toggle('side-peek', on); }, delay || 0);
+  }
+  function setMode(m) {
+    mode = m;
+    clearTimeout(peekTimer);
+    root.classList.toggle('side-auto', m === 'auto');
+    root.classList.toggle('side-min', m !== '');
+    root.classList.toggle('side-peek', m === 'auto' && !!side && side.matches(':hover'));
     if (toggle) {
-      var t = min ? 'Rozwiń menu' : 'Zwiń menu';
-      toggle.setAttribute('aria-expanded', min ? 'false' : 'true');
+      var t = m === 'min' ? 'Rozwiń menu' : 'Zwiń menu';
+      toggle.setAttribute('aria-expanded', m === 'min' ? 'false' : 'true');
       toggle.setAttribute('aria-label', t);
       toggle.title = t;
     }
-    railTips(min);
-    try { localStorage.setItem('sms-awarie-side', min ? 'min' : ''); } catch (e) { /* tryb prywatny */ }
+    if (autoBox) autoBox.checked = m === 'auto';
+    railTips(m === 'min');
+    try { localStorage.setItem('sms-awarie-side', m); } catch (e) { /* tryb prywatny */ }
   }
-  if (toggle) {
-    setMin(root.classList.contains('side-min'));
-    toggle.addEventListener('click', function () { setMin(!root.classList.contains('side-min')); });
+  if (side) {
+    setMode(mode);
+    if (toggle) toggle.addEventListener('click', function () { setMode(mode === 'min' ? '' : 'min'); });
+    // Przelacznik: wlaczony = tryb automatyczny, wylaczony = tryb staly (menu zostaje rozwiniete).
+    if (autoBox) autoBox.addEventListener('change', function () { setMode(autoBox.checked ? 'auto' : ''); });
+    // Tryb automatyczny: krotkie opoznienia, zeby menu nie migalo przy przejezdzaniu kursorem.
+    side.addEventListener('mouseenter', function () { if (wide.matches) peek(true, 120); });
+    side.addEventListener('mouseleave', function () {
+      if (side.querySelector('.version[open]')) return; // otwarta lista zmian - nie chowaj
+      peek(false, 350);
+    });
+    side.addEventListener('focusin', function () { if (wide.matches) peek(true); });
+    side.addEventListener('focusout', function (e) { if (!side.contains(e.relatedTarget) && !side.matches(':hover')) peek(false, 150); });
   }
-  // W pasku ikon klikniecie podmenu (Grupy, Ustawienia) rozwija menu i to podmenu.
+  // W pasku ikon klikniecie podmenu (Grupy, Ustawienia) rozwija menu i to podmenu (tez na ekranach dotykowych).
   document.querySelectorAll('.side .sub > summary').forEach(function (s) {
     s.addEventListener('click', function (e) {
-      if (!root.classList.contains('side-min') || !wide.matches) return;
+      if (!wide.matches || !root.classList.contains('side-min') || root.classList.contains('side-peek')) return;
       e.preventDefault();
       s.parentNode.open = true;
-      setMin(false);
+      if (mode === 'auto') peek(true); else setMode('');
     });
   });
 });

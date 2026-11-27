@@ -63,7 +63,8 @@ function layout_start(string $title, ?array $u, string $page): void {
 <script src="<?= asset('assets/js/app.js') ?>" defer></script>
 <script>/* 4.7.0: stan menu bocznego (zwiniete/rozwiniete) przed narysowaniem strony - bez migniecia */
 document.documentElement.className += ' js';
-try { if (localStorage.getItem('sms-awarie-side') === 'min') document.documentElement.className += ' side-min'; } catch (e) {}</script>
+/* 4.8.0: 'auto' = rozwijanie po najechaniu kursorem, 'min' = stale zwiniete, '' = stale rozwiniete */
+try { var sm = localStorage.getItem('sms-awarie-side'); if (sm === 'min') document.documentElement.className += ' side-min'; else if (sm === 'auto') document.documentElement.className += ' side-min side-auto'; } catch (e) {}</script>
 </head>
 <body<?= $u ? ' class="with-side"' : '' ?>>
 <?php if ($u): ?>
@@ -79,6 +80,9 @@ try { if (localStorage.getItem('sms-awarie-side') === 'min') document.documentEl
     <button type="button" class="side-toggle" aria-controls="side" aria-expanded="true" aria-label="Zwiń menu" title="Zwiń menu"><?= icon('collapse') ?></button>
     <label for="navt" class="side-close" role="button" aria-label="Zamknij menu" title="Zamknij menu"><?= icon('close') ?></label>
   </div>
+  <label class="side-mode" title="Włączone: menu rozwija się po najechaniu kursorem i chowa po zjechaniu. Wyłączone: menu zostaje tak, jak ustawisz przyciskiem obok nazwy (stale zwinięte albo rozwinięte).">
+    <input type="checkbox" id="side-auto" role="switch"><span class="sw" aria-hidden="true"></span><span class="lbl">Chowaj automatycznie</span>
+  </label>
   <nav aria-label="Menu główne">
   <?php foreach (nav_items($u) as $i): if ($i[3] === 'admin' && !is_admin($u)) continue; ?>
     <?php if ($i[0] !== null): echo nav_link($i); else:
