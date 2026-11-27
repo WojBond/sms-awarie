@@ -1,7 +1,11 @@
 <?php
 // SMS-Awarie - wersja, changelog, strefa czasowa i sciezki. Jedno zrodlo prawdy dla numeru wersji.
-define('APP_VERSION', '4.7.0');
+define('APP_VERSION', '4.8.0');
 const APP_CHANGELOG = [
+    '4.8.0' => [
+        'Przelacznik "Chowaj automatycznie" pod nazwa w menu bocznym (PC). Wlaczony: menu jest paskiem ikon, rozwija sie nad trescia po najechaniu kursorem i chowa po zjechaniu; glowne okno zostaje szerokie.',
+        'Wylaczony: menu zostaje cale czas zwiniete albo cale czas rozwiniete - jak ustawisz przyciskiem obok nazwy SMS-Awarie. Wybor jest zapamietany w przegladarce.',
+    ],
     '4.7.0' => [
         'Menu boczne mozna zwinac na PC przyciskiem obok nazwy SMS-Awarie: zostaje waski pasek ikon (podpowiedz z nazwa po najechaniu), a glowne okno automatycznie poszerza sie na zwolnione miejsce. Stan menu jest zapamietany w przegladarce.',
         'W pasku ikon klikniecie Grup zgloszen lub Ustawien rozwija menu z podmenu; wyroznione jest aktywne miejsce.',
